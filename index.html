@@ -182,8 +182,7 @@
             "imports": {
                 "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
                 "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-                "@mediapipe/hands": "https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js",
-                "@mediapipe/camera_utils": "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"
+                "@mediapipe/hands": "https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"
             }
         }
     </script>
@@ -221,7 +220,7 @@
             document.getElementById('error-modal').style.display = 'flex';
             document.getElementById('status-display').innerHTML = "State: <b>Restricted</b><br>Source: <b>Mouse Only</b>";
         } else {
-            initCamera(); // Only try camera if not file://
+            initCamera(); 
         }
 
         // --- THREE.JS SETUP ---
@@ -379,30 +378,60 @@
             }
         }
 
-        // --- AI CAMERA LOGIC ---
+        // --- AI CAMERA LOGIC (NATIVE) ---
         async function initCamera() {
+            const videoEl = document.getElementById('video-preview');
+            const statusEl = document.getElementById('status-display');
+
             try {
-                const { Hands } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js');
-                const { Camera } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js');
+                // 1. Force Browser to ask for Camera (Native API)
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: 320,
+                        height: 240,
+                        facingMode: "user"
+                    }
+                });
+
+                // 2. Attach stream to video element
+                videoEl.srcObject = stream;
+                await new Promise((resolve) => {
+                    videoEl.onloadedmetadata = () => {
+                        videoEl.play();
+                        resolve();
+                    };
+                });
                 
-                const videoEl = document.getElementById('video-preview');
+                videoEl.classList.add('active');
+                statusEl.innerHTML = "State: <b>Loading AI...</b><br>Source: <b>Camera Acquired</b>";
+
+                // 3. Initialize MediaPipe Hands
+                const { Hands } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js');
                 
                 const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-                hands.setOptions({maxNumHands: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5});
-                hands.onResults(onResults);
-                
-                const camera = new Camera(videoEl, {
-                    onFrame: async () => { await hands.send({image: videoEl}); },
-                    width: 320, height: 240
+                hands.setOptions({
+                    maxNumHands: 1, 
+                    minDetectionConfidence: 0.5, 
+                    minTrackingConfidence: 0.5
                 });
-                await camera.start();
                 
-                document.getElementById('status-display').innerHTML = "State: <b>Active</b><br>Source: <b>Hand Tracking</b>";
-                videoEl.classList.add('active');
+                hands.onResults(onResults);
+
+                // 4. Start Prediction Loop
+                async function predictWebcam() {
+                    if(videoEl.videoWidth > 0 && videoEl.videoHeight > 0) {
+                        await hands.send({image: videoEl});
+                    }
+                    requestAnimationFrame(predictWebcam);
+                }
                 
-            } catch(e) {
-                console.error(e);
-                document.getElementById('status-display').innerHTML = "State: <b>Error</b><br>Source: <b>Mouse Fallback</b>";
+                predictWebcam();
+                statusEl.innerHTML = "State: <b>Active</b><br>Source: <b>Hand Tracking</b>";
+
+            } catch (err) {
+                console.error("Camera Error:", err);
+                statusEl.innerHTML = `State: <b>Error</b><br>Source: <b>${err.name}</b>`;
+                alert("Please allow camera access to use hand gestures. Falling back to mouse.");
             }
         }
 
