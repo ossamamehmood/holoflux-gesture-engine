@@ -3,80 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gesture Particles - DEBUG MODE</title>
+    <title>Gesture Hologram - Pro</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: monospace; user-select: none; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; user-select: none; }
         
         /* THE CANVAS */
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
         
-        /* DEBUG CONSOLE (Top Left) */
-        #debug-console {
-            position: absolute; top: 10px; left: 10px; width: 300px; max-height: 200px;
-            background: rgba(0,0,0,0.8); border: 1px solid red; color: #0f0;
-            font-size: 10px; padding: 10px; overflow-y: auto; z-index: 1000;
-            pointer-events: none; white-space: pre-wrap;
-        }
-
-        /* CAMERA BOX (Fixed Position, Always Visible) */
+        /* CAMERA FEED (HUD STYLE) */
         #video-container {
             position: absolute; bottom: 20px; right: 20px; 
-            width: 240px; height: 180px; 
-            border: 2px solid #555; background: #222;
-            z-index: 1000; border-radius: 8px; overflow: hidden;
-            display: flex; align-items: center; justify-content: center;
+            width: 200px; height: 150px; 
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 10px; overflow: hidden; z-index: 20;
+            background: rgba(0,0,0,0.5);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+            opacity: 0; transition: opacity 0.5s;
         }
         
         #video-feed {
             width: 100%; height: 100%; object-fit: cover;
-            transform: scaleX(-1); /* Mirror */
+            transform: scaleX(-1); /* Mirror effect */
+            opacity: 0.7;
         }
-        
-        /* Placeholder text inside camera box */
-        #cam-status { position: absolute; color: white; font-size: 12px; text-align: center; }
 
-        /* UI CONTROLS */
+        #cam-label {
+            position: absolute; bottom: 5px; left: 10px;
+            color: cyan; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+            text-shadow: 0 0 5px cyan;
+        }
+
+        /* UI OVERLAY (Buttons) */
         #ui-layer {
             position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-            z-index: 100; display: flex; gap: 10px;
+            z-index: 10; display: flex; gap: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px 30px; border-radius: 50px;
+            backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            opacity: 0; transition: opacity 1s ease; pointer-events: none;
         }
+        
+        #ui-layer.visible { opacity: 1; pointer-events: all; }
 
         button {
-            background: rgba(0,0,0,0.5); border: 1px solid cyan; color: cyan;
-            padding: 10px 20px; border-radius: 20px; cursor: pointer; text-transform: uppercase;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2);
+            color: #ccc; padding: 12px 24px; border-radius: 25px;
+            cursor: pointer; text-transform: uppercase; font-size: 11px; letter-spacing: 2px;
+            font-weight: 600; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        button:hover { background: cyan; color: black; }
+        
+        button:hover, button.active {
+            background: white; color: black; 
+            box-shadow: 0 0 20px rgba(255,255,255,0.6);
+            transform: translateY(-2px);
+        }
 
-        /* START BUTTON OVERLAY */
-        #overlay {
+        /* START SCREEN */
+        #intro-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 2000;
+            background: black; z-index: 100;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: white; text-align: center;
+            transition: opacity 0.8s ease;
         }
-        #start-btn { font-size: 20px; padding: 20px 50px; border: 2px solid cyan; }
+        
+        h1 { font-weight: 200; letter-spacing: 5px; margin-bottom: 10px; text-transform: uppercase; }
+        p { color: #888; font-size: 14px; margin-bottom: 30px; letter-spacing: 1px; }
+
+        #start-btn {
+            background: transparent; color: cyan; border: 1px solid cyan;
+            padding: 15px 40px; font-size: 14px; letter-spacing: 3px;
+            text-transform: uppercase; cursor: pointer; transition: 0.3s;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+        
+        #start-btn:hover { background: cyan; color: black; box-shadow: 0 0 30px cyan; }
+
+        #status {
+            position: absolute; top: 20px; left: 20px; color: rgba(255,255,255,0.5);
+            font-size: 12px; letter-spacing: 1px; z-index: 5;
+            background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        #guide {
+            margin-top: 5px; font-size: 10px; color: #888;
+        }
     </style>
 </head>
 <body>
 
-    <div id="debug-console">System Log Initialized...<br></div>
+    <div id="intro-screen">
+        <h1>Particle Core</h1>
+        <p>System requires camera access for gestures</p>
+        <button id="start-btn">Initialize System</button>
+    </div>
 
-    <div id="overlay">
-        <h1 style="color:white; margin-bottom: 20px;">PARTICLE SYSTEM</h1>
-        <button id="start-btn">CLICK TO START CAMERA</button>
-        <p style="color: #888; margin-top: 10px;">(Must be HTTPS or Localhost)</p>
+    <div id="status">
+        <span id="status-text">Waiting for input...</span>
+        <div id="guide">👆 Point index finger to move particles</div>
     </div>
 
     <div id="video-container">
-        <span id="cam-status">Camera Off</span>
         <video id="video-feed" playsinline muted autoplay></video>
+        <div id="cam-label">Optical Sensor</div>
     </div>
 
     <div id="canvas-container"></div>
 
     <div id="ui-layer">
-        <button onclick="morphTo('sphere')">Globe</button>
+        <button onclick="morphTo('sphere')" class="active">Globe</button>
         <button onclick="morphTo('heart')">Heart</button>
         <button onclick="morphTo('saturn')">Saturn</button>
+        <button onclick="morphTo('spiral')">Galaxy</button>
         <button onclick="toggleExplosion()">💥 Explode</button>
     </div>
 
@@ -96,49 +136,42 @@
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
+        import { gsap } from 'https://cdn.skypack.dev/gsap';
 
-        // --- CUSTOM LOGGER ---
-        const debugBox = document.getElementById('debug-console');
-        function log(msg, isError = false) {
-            const line = document.createElement('div');
-            line.textContent = `> ${msg}`;
-            if(isError) line.style.color = 'red';
-            debugBox.appendChild(line);
-            debugBox.scrollTop = debugBox.scrollHeight;
-            console.log(msg);
-        }
-        window.onerror = function(msg, source, lineno) {
-            log(`CRITICAL ERROR: ${msg} (Line ${lineno})`, true);
-        };
-
-        // --- GLOBAL VARS ---
+        // --- GLOBAL VARIABLES ---
         let handLandmarker;
         const video = document.getElementById("video-feed");
-        const camStatus = document.getElementById("cam-status");
+        const statusText = document.getElementById("status-text");
+        const videoContainer = document.getElementById("video-container");
         
-        // --- 1. THREE.JS SETUP ---
-        const PARTICLE_COUNT = 30000; // Reduced slightly for safety
+        // --- 1. SETUP THREE.JS SCENE ---
+        const PARTICLE_COUNT = 45000;
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 30;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: false });
+        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // Cursor Ring
-        const cursorMesh = new THREE.Mesh(
-            new THREE.RingGeometry(0.5, 0.7, 32),
-            new THREE.MeshBasicMaterial({ color: 0x00ffff, side: THREE.DoubleSide })
-        );
+        // --- CURSOR INDICATOR (Visual Feedback) ---
+        const cursorGeometry = new THREE.RingGeometry(0.5, 0.6, 32);
+        const cursorMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+        const cursorMesh = new THREE.Mesh(cursorGeometry, cursorMaterial);
         scene.add(cursorMesh);
 
         // Post Processing
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0;
+        bloomPass.strength = 1.3;
+        bloomPass.radius = 0.5;
         const composer = new EffectComposer(renderer);
-        composer.addPass(new RenderPass(scene, camera));
-        composer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85));
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
 
-        // Shaders
+        // --- SHADERS & PARTICLES (Same Logic) ---
         const vertexShader = `
             uniform float uTime;
             uniform float uMorph;
@@ -147,170 +180,192 @@
             attribute vec3 positionTarget;
             attribute float sizeRandom;
             varying vec3 vColor;
+            varying float vDist;
             
-            // Fast Noise
-            float rand(vec2 co){ return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453); }
-
+            // Simplex Noise (Compressed for brevity)
+            vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+            vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+            vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
+            vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+            float snoise(vec3 v) {
+                const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
+                const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
+                vec3 i  = floor(v + dot(v, C.yyy) );
+                vec3 x0 = v - i + dot(i, C.xxx) ;
+                vec3 g = step(x0.yzx, x0.xyz);
+                vec3 l = 1.0 - g;
+                vec3 i1 = min( g.xyz, l.zxy );
+                vec3 i2 = max( g.xyz, l.zxy );
+                vec3 x1 = x0 - i1 + C.xxx;
+                vec3 x2 = x0 - i2 + C.yyy;
+                vec3 x3 = x0 - D.yyy;
+                i = mod289(i);
+                vec4 p = permute( permute( permute(
+                            i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
+                        + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
+                        + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+                float n_ = 0.142857142857;
+                vec3  ns = n_ * D.wyz - D.xzx;
+                vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+                vec4 x_ = floor(j * ns.z);
+                vec4 y_ = floor(j - 7.0 * x_ );
+                vec4 x = x_ *ns.x + ns.yyyy;
+                vec4 y = y_ *ns.x + ns.yyyy;
+                vec4 h = 1.0 - abs(x) - abs(y);
+                vec4 b0 = vec4( x.xy, y.xy );
+                vec4 b1 = vec4( x.zw, y.zw );
+                vec4 s0 = floor(b0)*2.0 + 1.0;
+                vec4 s1 = floor(b1)*2.0 + 1.0;
+                vec4 sh = -step(h, vec4(0.0));
+                vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
+                vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
+                vec3 p0 = vec3(a0.xy,h.x);
+                vec3 p1 = vec3(a0.zw,h.y);
+                vec3 p2 = vec3(a1.xy,h.z);
+                vec3 p3 = vec3(a1.zw,h.w);
+                vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+                p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+                vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+                m = m * m;
+                return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
+            }
             void main() {
                 vec3 pos = mix(position, positionTarget, uMorph);
-                
-                // Simple Noise Movement
-                float n = sin(pos.y * 0.1 + uTime) * 0.2;
-                pos.x += n; 
-
-                // Interaction
+                float noiseVal = snoise(pos * 0.1 + uTime * 0.2);
+                pos += normal * noiseVal * 0.5;
                 float dist = distance(pos, uMouse);
-                if(dist < 6.0) {
+                vDist = dist;
+                if(dist < 5.0) {
                     vec3 dir = normalize(pos - uMouse);
-                    pos += dir * (6.0 - dist) * uInteractStrength;
+                    pos += dir * (5.0 - dist) * uInteractStrength;
                 }
-
                 vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
                 gl_Position = projectionMatrix * mvPosition;
-                gl_PointSize = (80.0 * sizeRandom) / -mvPosition.z;
-                
-                vColor = mix(vec3(0.2, 0.6, 1.0), vec3(1.0, 0.2, 0.5), sizeRandom);
+                gl_PointSize = (100.0 * sizeRandom) / -mvPosition.z;
+                vColor = mix(vec3(0.1, 0.5, 1.0), vec3(1.0, 0.2, 0.5), noiseVal + 0.5);
             }
         `;
+
         const fragmentShader = `
             varying vec3 vColor;
+            varying float vDist;
             void main() {
                 float r = distance(gl_PointCoord, vec2(0.5));
                 if (r > 0.5) discard;
-                gl_FragColor = vec4(vColor, 1.0 - r*2.0);
+                float glow = 1.0 - (r * 2.0);
+                glow = pow(glow, 1.5);
+                vec3 finalColor = vColor;
+                if(vDist < 5.0) finalColor += vec3(0.5, 0.5, 1.0) * (1.0 - vDist/5.0);
+                gl_FragColor = vec4(finalColor, glow);
             }
         `;
 
-        // Particles
         const geometry = new THREE.BufferGeometry();
-        const posArray = new Float32Array(PARTICLE_COUNT * 3);
-        const targetArray = new Float32Array(PARTICLE_COUNT * 3);
-        const randArray = new Float32Array(PARTICLE_COUNT);
+        const positions = new Float32Array(PARTICLE_COUNT * 3);
+        const targets = new Float32Array(PARTICLE_COUNT * 3);
+        const randoms = new Float32Array(PARTICLE_COUNT);
 
-        for(let i=0; i<PARTICLE_COUNT; i++){
-            posArray[i*3] = (Math.random()-0.5)*20;
-            posArray[i*3+1] = (Math.random()-0.5)*20;
-            posArray[i*3+2] = (Math.random()-0.5)*20;
-            targetArray[i*3] = posArray[i*3];
-            targetArray[i*3+1] = posArray[i*3+1];
-            targetArray[i*3+2] = posArray[i*3+2];
-            randArray[i] = Math.random();
+        function getSpherePoint(r) {
+            const u = Math.random();
+            const v = Math.random();
+            const theta = 2 * Math.PI * u;
+            const phi = Math.acos(2 * v - 1);
+            return {
+                x: r * Math.sin(phi) * Math.cos(theta),
+                y: r * Math.sin(phi) * Math.sin(theta),
+                z: r * Math.cos(phi)
+            };
         }
-        geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        geometry.setAttribute('positionTarget', new THREE.BufferAttribute(targetArray, 3));
-        geometry.setAttribute('sizeRandom', new THREE.BufferAttribute(randArray, 1));
+
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            const p = getSpherePoint(10);
+            positions[i * 3] = targets[i * 3] = p.x;
+            positions[i * 3 + 1] = targets[i * 3 + 1] = p.y;
+            positions[i * 3 + 2] = targets[i * 3 + 2] = p.z;
+            randoms[i] = Math.random();
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('positionTarget', new THREE.BufferAttribute(targets, 3));
+        geometry.setAttribute('sizeRandom', new THREE.BufferAttribute(randoms, 1));
 
         const material = new THREE.ShaderMaterial({
             vertexShader, fragmentShader,
             uniforms: {
                 uTime: { value: 0 },
                 uMorph: { value: 0 },
-                uMouse: { value: new THREE.Vector3(999,999,999) },
+                uMouse: { value: new THREE.Vector3(999, 999, 999) },
                 uInteractStrength: { value: 1.0 }
             },
             transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
         });
-        scene.add(new THREE.Points(geometry, material));
 
-        // Shapes Logic
+        const particles = new THREE.Points(geometry, material);
+        scene.add(particles);
+
         const shapes = {
             sphere: () => {
-                const arr = new Float32Array(PARTICLE_COUNT*3);
-                for(let i=0; i<PARTICLE_COUNT; i++){
-                    const u=Math.random(), v=Math.random();
-                    const t=2*Math.PI*u, p=Math.acos(2*v-1);
-                    const r=10;
-                    arr[i*3]=r*Math.sin(p)*Math.cos(t);
-                    arr[i*3+1]=r*Math.sin(p)*Math.sin(t);
-                    arr[i*3+2]=r*Math.cos(p);
+                const arr = new Float32Array(PARTICLE_COUNT * 3);
+                for(let i=0; i<PARTICLE_COUNT; i++) {
+                    const p = getSpherePoint(10);
+                    arr[i*3]=p.x; arr[i*3+1]=p.y; arr[i*3+2]=p.z;
                 } return arr;
             },
-            heart: () => { // Simplified heart
-                const arr = new Float32Array(PARTICLE_COUNT*3);
-                for(let i=0; i<PARTICLE_COUNT; i++){
-                    let t = Math.random()*Math.PI*2, s = Math.random();
+            heart: () => {
+                const arr = new Float32Array(PARTICLE_COUNT * 3);
+                for(let i=0; i<PARTICLE_COUNT; i++) {
+                    let t = Math.random()*Math.PI*2, s = Math.pow(Math.random(), 1/3)*0.8; 
                     let x = 16 * Math.pow(Math.sin(t), 3);
                     let y = 13 * Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t);
-                    arr[i*3]=x*0.5*s; arr[i*3+1]=y*0.5*s; arr[i*3+2]=(Math.random()-0.5)*4;
+                    let z = (Math.random()-0.5)*5;
+                    arr[i*3]=x*s; arr[i*3+1]=y*s; arr[i*3+2]=z;
                 } return arr;
             },
-            saturn: shapes_saturn, // Defined below to save space
+            saturn: () => {
+                const arr = new Float32Array(PARTICLE_COUNT * 3);
+                for(let i=0; i<PARTICLE_COUNT; i++) {
+                    if(i < PARTICLE_COUNT * 0.6) {
+                        const p = getSpherePoint(7);
+                        arr[i*3]=p.x; arr[i*3+1]=p.y; arr[i*3+2]=p.z;
+                    } else {
+                        const theta = Math.random() * Math.PI * 2;
+                        const r = 10 + Math.random() * 8;
+                        let x = r * Math.cos(theta), y = (Math.random()-0.5)*0.5, z = r * Math.sin(theta);
+                        arr[i*3] = x;
+                        arr[i*3+1] = y * Math.cos(0.4) - z * Math.sin(0.4);
+                        arr[i*3+2] = y * Math.sin(0.4) + z * Math.cos(0.4);
+                    }
+                } return arr;
+            },
+            spiral: () => {
+                const arr = new Float32Array(PARTICLE_COUNT * 3);
+                for(let i=0; i<PARTICLE_COUNT; i++) {
+                    const angle = i * 0.005, r = i * 0.0005 * 15;
+                    arr[i*3] = r * Math.cos(angle);
+                    arr[i*3+1] = (Math.random() - 0.5) * 5;
+                    arr[i*3+2] = r * Math.sin(angle);
+                } return arr;
+            }
         };
 
-        function shapes_saturn() {
-             const arr = new Float32Array(PARTICLE_COUNT*3);
-             for(let i=0; i<PARTICLE_COUNT; i++){
-                 if(i<PARTICLE_COUNT*0.6) { // Planet
-                    const u=Math.random(), v=Math.random();
-                    const t=2*Math.PI*u, p=Math.acos(2*v-1);
-                    arr[i*3]=7*Math.sin(p)*Math.cos(t);
-                    arr[i*3+1]=7*Math.sin(p)*Math.sin(t);
-                    arr[i*3+2]=7*Math.cos(p);
-                 } else { // Rings
-                    const t = Math.random()*Math.PI*2;
-                    const r = 10 + Math.random()*8;
-                    arr[i*3]=r*Math.cos(t); arr[i*3+1]=(Math.random()-0.5); arr[i*3+2]=r*Math.sin(t);
-                 }
-             } return arr;
-        }
-
-        window.morphTo = (name) => {
-            if(!shapes[name]) return;
-            log(`Morphing to ${name}`);
-            const newPos = shapes[name]();
-            geometry.attributes.positionTarget.set(newPos);
+        window.morphTo = (shapeName) => {
+            document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+            if(event) event.target.classList.add('active');
+            geometry.attributes.positionTarget.set(shapes[shapeName]());
             geometry.attributes.positionTarget.needsUpdate = true;
-            let val = { v: 0 };
-            function anim() {
-                val.v += 0.02;
-                material.uniforms.uMorph.value = val.v;
-                if(val.v < 1) requestAnimationFrame(anim);
-            }
-            anim();
+            gsap.fromTo(material.uniforms.uMorph, {value: 0}, {value: 1, duration: 2, ease: "power2.inOut"});
         };
-        
+
         window.toggleExplosion = () => {
-             log("Explosion Triggered");
              material.uniforms.uInteractStrength.value = -5.0;
-             setTimeout(() => material.uniforms.uInteractStrength.value = 1.0, 500);
+             setTimeout(() => { gsap.to(material.uniforms.uInteractStrength, {value: 1.0, duration: 1}); }, 500);
         };
 
-        // --- 2. CAMERA INITIALIZATION ---
-        async function startCamera() {
-            const btn = document.getElementById('start-btn');
-            btn.innerText = "REQUESTING ACCESS...";
-            log("Attempting to access camera...");
-
-            // Check if secure context
-            if (!window.isSecureContext) {
-                log("ERROR: App is not in Secure Context (HTTPS/Localhost). Camera will fail.", true);
-                alert("ERROR: You must run this on Localhost or HTTPS (Vercel/Netlify).");
-                return;
-            }
-
+        // --- 2. CAMERA AND AI LOGIC ---
+        async function enableCam() {
+            document.getElementById('start-btn').innerText = "Initializing...";
+            
             try {
-                // 1. Get Stream
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { width: 320, height: 240, facingMode: "user" } 
-                });
-                
-                log("Camera Access GRANTED.");
-                video.srcObject = stream;
-                
-                // 2. Wait for video data
-                await new Promise((resolve) => {
-                    video.onloadeddata = () => {
-                        log("Video Data Loaded.");
-                        resolve();
-                    };
-                });
-                
-                video.play();
-                camStatus.style.display = 'none'; // Hide "Camera Off" text
-                document.getElementById('video-container').style.border = "2px solid #0f0"; // Green border
-                
-                // 3. Load AI
-                log("Loading AI Model...");
                 const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
                 handLandmarker = await HandLandmarker.createFromOptions(vision, {
                     baseOptions: {
@@ -319,73 +374,98 @@
                     },
                     runningMode: "VIDEO",
                     numHands: 1,
-                    minHandDetectionConfidence: 0.3
+                    minHandDetectionConfidence: 0.3,
+                    minHandPresenceConfidence: 0.3,
+                    minTrackingConfidence: 0.3
                 });
-                
-                log("AI Model Loaded. Tracking Active.");
-                document.getElementById('overlay').style.display = 'none'; // Remove start screen
-                predictWebcam();
+
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                video.addEventListener("loadeddata", () => {
+                    // Hide Intro
+                    gsap.to("#intro-screen", { opacity: 0, duration: 1, onComplete: () => {
+                        document.getElementById("intro-screen").style.display = 'none';
+                        document.getElementById("ui-layer").classList.add("visible");
+                        
+                        // Show HUD
+                        videoContainer.style.opacity = 1;
+                    }});
+                    predictWebcam();
+                });
 
             } catch (err) {
-                log(`FAILURE: ${err.message}`, true);
-                log(`Full Error: ${err}`, true);
-                btn.innerText = "FAILED - CHECK LOGS";
-                btn.style.borderColor = "red";
-                btn.style.color = "red";
+                console.error(err);
+                alert("Error: " + err.message);
             }
         }
 
-        // --- 3. TRACKING LOOP ---
-        let targetX = 0, targetY = 0, currentX = 0, currentY = 0;
+        // --- TRACKING LOOP ---
+        let targetX = 0, targetY = 0;
+        let currentX = 0, currentY = 0;
 
         async function predictWebcam() {
             if (handLandmarker && video.currentTime !== 0) {
-                const results = handLandmarker.detectForVideo(video, performance.now());
-                
+                let startTimeMs = performance.now();
+                const results = handLandmarker.detectForVideo(video, startTimeMs);
+
                 if (results.landmarks.length > 0) {
-                    const p = results.landmarks[0][8]; // Index Tip
-                    // Log only every 100 frames to save spam, or just use visual
-                    targetX = (1 - p.x) * 40 - 20; 
-                    targetY = -(p.y) * 30 + 15;
-                    cursorMesh.visible = true;
-                    document.getElementById('video-container').style.borderColor = "#00ff00"; // Green when tracking
+                    const indexTip = results.landmarks[0][8]; 
+                    // Map video coords to 3D scene coords
+                    targetX = (1 - indexTip.x) * 40 - 20; 
+                    targetY = -(indexTip.y) * 30 + 15;
+                    statusText.innerText = "Tracking Hand: Active";
+                    statusText.style.color = "cyan";
+                    cursorMesh.visible = true; // Show tracking ring
                 } else {
-                    cursorMesh.visible = false;
-                    document.getElementById('video-container').style.borderColor = "#555"; // Grey when lost
+                    statusText.innerText = "No Hand Detected";
+                    statusText.style.color = "#ff5555";
+                    cursorMesh.visible = false; // Hide ring
                 }
             }
             requestAnimationFrame(predictWebcam);
         }
 
-        // --- 4. ANIMATION LOOP ---
+        // Mouse Fallback
+        window.addEventListener('mousemove', (e) => {
+            if(statusText.innerText.includes("No Hand")) {
+                targetX = (e.clientX / window.innerWidth) * 40 - 20;
+                targetY = -(e.clientY / window.innerHeight) * 30 + 15;
+                cursorMesh.visible = true; // Show ring for mouse too
+            }
+        });
+
+        // --- ANIMATION ---
+        const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
-            material.uniforms.uTime.value = performance.now() / 1000;
+            const time = clock.getElapsedTime();
             
-            // Lerp Mouse
+            material.uniforms.uTime.value = time;
+            
+            // Lerp
             currentX += (targetX - currentX) * 0.1;
             currentY += (targetY - currentY) * 0.1;
+            
             material.uniforms.uMouse.value.set(currentX, currentY, 0);
             
-            cursorMesh.position.set(currentX, currentY, 5);
-            
+            // Update Cursor Mesh position
+            cursorMesh.position.set(currentX, currentY, 5); // Just in front of particles
+            cursorMesh.rotation.z += 0.05;
+            cursorMesh.scale.setScalar(1 + Math.sin(time * 5) * 0.1);
+
+            particles.rotation.y = time * 0.05;
             composer.render();
         }
 
-        // Bind
-        document.getElementById('start-btn').addEventListener('click', startCamera);
-        animate(); // Start rendering loop immediately
-        log("System Ready. Waiting for user start.");
+        document.getElementById('start-btn').addEventListener('click', enableCam);
+        animate();
 
-        // Mouse Fallback
-        window.addEventListener('mousemove', (e) => {
-             if(!handLandmarker) {
-                 targetX = (e.clientX/window.innerWidth)*40 - 20;
-                 targetY = -(e.clientY/window.innerHeight)*30 + 15;
-                 cursorMesh.visible = true;
-             }
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
         });
-
     </script>
 </body>
 </html>
