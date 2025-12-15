@@ -3,127 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>HoloFlux Engine | Final Polish</title>
+    <title>HoloFlux | Glass Edition</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; user-select: none; }
+        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Segoe UI', sans-serif; user-select: none; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
         
-        /* HUD & FEED */
+        /* --- HUD ELEMENTS --- */
         #video-container {
             position: absolute; bottom: 20px; right: 20px; 
             width: 160px; height: 120px; 
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 16px; overflow: hidden; z-index: 20;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(10px);
             opacity: 0; transition: opacity 0.5s; pointer-events: none;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
         }
-        
-        #video-feed {
-            width: 100%; height: 100%; object-fit: cover;
-            transform: scaleX(-1); opacity: 0.5;
-        }
-
+        #video-feed { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); opacity: 0.5; }
         #gesture-label {
-            position: absolute; top: 8px; left: 8px;
-            color: white; font-size: 10px; font-weight: 600; text-transform: uppercase;
-            letter-spacing: 1px;
-            text-shadow: 0 0 10px rgba(0,255,255,0.5);
+            position: absolute; top: 8px; left: 8px; color: white; font-size: 10px; 
+            font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(0,255,255,0.8);
         }
 
-        /* START SCREEN (Updated Gradient) */
+        /* --- THE GLASS START SCREEN --- */
         #intro-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            /* Gradient matching particles: Deep Blue -> Magenta */
-            background: radial-gradient(circle at center, #1a0b2e 0%, #000000 100%);
-            z-index: 100; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; color: white;
-            transition: opacity 0.8s ease;
+            z-index: 100; display: flex; align-items: center; justify-content: center;
+            /* The frosted glass effect over the whole screen */
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(15px) saturate(120%);
+            -webkit-backdrop-filter: blur(15px) saturate(120%);
+            transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-        
-        /* Animated Gradient Text */
+
+        /* 3D TILT CARD */
+        #glass-card {
+            position: relative;
+            width: 400px; padding: 50px 30px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            overflow: hidden;
+            transform-style: preserve-3d;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* Moving Shine Effect */
+        #glass-card::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
+            transform: skewX(-25deg);
+            animation: shine 4s infinite;
+        }
+
+        @keyframes shine { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
         h1 { 
-            font-weight: 800; letter-spacing: 4px; margin-bottom: 10px; 
-            text-transform: uppercase; font-size: 3rem; text-align: center;
-            background: linear-gradient(90deg, #00ffff, #ff00cc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.3));
+            font-size: 3.5rem; margin: 0; letter-spacing: -2px; text-transform: uppercase; font-weight: 800;
+            background: linear-gradient(135deg, #fff 0%, #00ffff 50%, #ff00cc 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 15px rgba(0,255,255,0.3));
         }
         
-        p { color: rgba(255,255,255,0.7); font-size: 14px; margin-bottom: 40px; letter-spacing: 2px; font-weight: 300; }
+        p { 
+            color: rgba(255,255,255,0.7); font-size: 0.9rem; letter-spacing: 4px; 
+            margin-top: 5px; margin-bottom: 40px; text-transform: uppercase; 
+        }
 
         #start-btn {
-            background: rgba(255, 255, 255, 0.1); 
-            color: white; border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 18px 50px; font-size: 14px; letter-spacing: 3px;
-            text-transform: uppercase; cursor: pointer; transition: all 0.4s;
-            border-radius: 30px;
-            backdrop-filter: blur(10px);
+            background: linear-gradient(90deg, rgba(0,255,255,0.1), rgba(255,0,204,0.1));
+            border: 1px solid rgba(255,255,255,0.2); color: white;
+            padding: 16px 40px; border-radius: 50px; cursor: pointer;
+            font-size: 14px; letter-spacing: 2px; text-transform: uppercase; font-weight: 600;
+            transition: 0.3s; position: relative; overflow: hidden;
         }
-        #start-btn:hover { 
-            background: white; color: black; 
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.4);
+        #start-btn:hover {
+            background: white; color: black; box-shadow: 0 0 30px rgba(255,255,255,0.5);
             transform: scale(1.05);
         }
 
-        /* iOS GLASS BAR (Bottom UI) */
+        /* --- BOTTOM UI BAR --- */
         #ui-layer {
             position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-            z-index: 10; display: flex; gap: 8px; justify-content: center;
-            padding: 10px 10px;
-            
-            /* Glass Effect */
-            background: rgba(20, 20, 20, 0.4);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 24px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            
-            pointer-events: auto;
+            z-index: 10; display: flex; gap: 8px; padding: 8px;
+            background: rgba(10, 10, 10, 0.6);
+            backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.4);
         }
         
         button.nav-btn {
             background: transparent; border: none; color: rgba(255,255,255,0.6);
-            padding: 10px 20px; border-radius: 18px; cursor: pointer;
-            font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+            padding: 10px 20px; border-radius: 16px; cursor: pointer;
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
             transition: all 0.3s ease;
         }
-        
-        button.nav-btn:hover { background: rgba(255,255,255,0.1); color: white; }
-        
-        button.nav-btn.active { 
-            background: rgba(255,255,255,0.9); color: black; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
+        button.nav-btn:hover { color: white; background: rgba(255,255,255,0.05); }
+        button.nav-btn.active { background: white; color: black; box-shadow: 0 2px 10px rgba(255,255,255,0.2); }
 
-        /* INSTRUCTIONS */
+        /* --- INSTRUCTIONS --- */
         #cheat-sheet {
             position: absolute; top: 30px; right: 30px; text-align: right;
-            color: rgba(255,255,255,0.5); font-size: 12px; line-height: 2.2;
-            pointer-events: none; z-index: 5; font-weight: 500;
-            background: rgba(0,0,0,0.3); padding: 15px 25px; border-radius: 15px;
-            border: 1px solid rgba(255,255,255,0.05);
-            backdrop-filter: blur(5px);
+            color: rgba(255,255,255,0.6); font-size: 12px; line-height: 2.2;
+            pointer-events: none; z-index: 5;
+            background: rgba(0,0,0,0.4); padding: 20px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px);
         }
-        b { color: white; font-weight: 700; margin-left: 5px; }
+        b { color: white; font-weight: 700; margin-left: 8px; }
         
         @media (max-width: 600px) {
+            #glass-card { width: 85%; padding: 40px 20px; }
+            h1 { font-size: 2.5rem; }
             #cheat-sheet { display: none; }
-            #video-container { width: 100px; height: 75px; bottom: 100px; right: 20px; }
-            h1 { font-size: 2rem; }
-            #ui-layer { bottom: 20px; width: 85%; }
+            #ui-layer { bottom: 20px; width: 90%; justify-content: center; }
+            button.nav-btn { padding: 10px 12px; font-size: 9px; }
         }
     </style>
 </head>
 <body>
 
     <div id="intro-screen">
-        <h1>HoloFlux Engine</h1>
-        <p>GESTURE INTERFACE // SYSTEM READY</p>
-        <button id="start-btn">Initialize Core</button>
+        <div id="glass-card">
+            <h1>HoloFlux</h1>
+            <p>Interactive Particle Core</p>
+            <button id="start-btn">Initialize System</button>
+        </div>
     </div>
 
     <div id="cheat-sheet">
@@ -169,60 +176,35 @@
         // --- AUDIO ENGINE ---
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         let audioCtx;
-
         function playSound(type) {
             if (!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            osc.connect(gain); gain.connect(audioCtx.destination);
             const now = audioCtx.currentTime;
-
             if (type === 'explode') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(100, now);
-                osc.frequency.exponentialRampToValueAtTime(10, now + 0.5);
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-                osc.start(now); osc.stop(now + 0.5);
-            } 
-            else if (type === 'implode') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(50, now);
-                osc.frequency.exponentialRampToValueAtTime(300, now + 0.3);
-                gain.gain.setValueAtTime(0, now);
-                gain.gain.linearRampToValueAtTime(0.4, now + 0.2);
-                gain.gain.linearRampToValueAtTime(0, now + 0.4);
-                osc.start(now); osc.stop(now + 0.4);
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(10, now+0.5);
+                gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.5);
+            } else if (type === 'implode') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(50, now); osc.frequency.exponentialRampToValueAtTime(300, now+0.3);
+                gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.4, now+0.2); gain.gain.linearRampToValueAtTime(0, now+0.4);
+            } else if (type === 'freeze') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(100, now+1.0);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+1.0);
+            } else if (type === 'morph') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(440, now); osc.frequency.setValueAtTime(880, now+0.1);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.5);
             }
-            else if (type === 'freeze') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, now);
-                osc.frequency.exponentialRampToValueAtTime(100, now + 1.0);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.linearRampToValueAtTime(0, now + 1.0);
-                osc.start(now); osc.stop(now + 1.0);
-            }
-            else if (type === 'morph') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(440, now);
-                osc.frequency.setValueAtTime(880, now + 0.1);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-                osc.start(now); osc.stop(now + 0.5);
-            }
+            osc.start(now); osc.stop(now + 1.0);
         }
 
         // --- SETUP ---
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         const PARTICLE_COUNT = isMobile ? 20000 : 60000;
-
         let handLandmarker;
         const video = document.getElementById("video-feed");
         const gestureLabel = document.getElementById("gesture-label");
-        let lastGestureTime = 0; 
-        let timeSpeed = 1.0; 
-        let lastGesture = "";
+        let lastGestureTime = 0; let timeSpeed = 1.0; let lastGesture = "";
 
         // --- THREE.JS ---
         const scene = new THREE.Scene();
@@ -246,79 +228,49 @@
         const composer = new EffectComposer(renderer);
         composer.addPass(renderScene); composer.addPass(bloomPass);
 
-        // --- SHADER ---
+        // --- SHADER (The Magic) ---
         const vertexShader = `
-            uniform float uTime;
-            uniform float uMorph;
-            uniform vec3 uMouse;
-            uniform float uInteractType; 
-            uniform float uSpeed; 
-            attribute vec3 positionTarget;
-            attribute float sizeRandom;
-            varying vec3 vColor;
-            
+            uniform float uTime; uniform float uMorph; uniform vec3 uMouse; uniform float uInteractType; uniform float uSpeed; 
+            attribute vec3 positionTarget; attribute float sizeRandom; varying vec3 vColor;
             vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
             vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
             vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
             vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
             float snoise(vec3 v) {
-                const vec2 C = vec2(1.0/6.0, 1.0/3.0);
-                const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
-                vec3 i = floor(v + dot(v, C.yyy));
-                vec3 x0 = v - i + dot(i, C.xxx);
-                vec3 g = step(x0.yzx, x0.xyz);
-                vec3 l = 1.0 - g;
-                vec3 i1 = min(g.xyz, l.zxy);
-                vec3 i2 = max(g.xyz, l.zxy);
-                vec3 x1 = x0 - i1 + C.xxx;
-                vec3 x2 = x0 - i2 + C.yyy;
-                vec3 x3 = x0 - D.yyy;
+                const vec2 C = vec2(1.0/6.0, 1.0/3.0); const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+                vec3 i = floor(v + dot(v, C.yyy)); vec3 x0 = v - i + dot(i, C.xxx);
+                vec3 g = step(x0.yzx, x0.xyz); vec3 l = 1.0 - g;
+                vec3 i1 = min(g.xyz, l.zxy); vec3 i2 = max(g.xyz, l.zxy);
+                vec3 x1 = x0 - i1 + C.xxx; vec3 x2 = x0 - i2 + C.yyy; vec3 x3 = x0 - D.yyy;
                 i = mod289(i);
                 vec4 p = permute(permute(permute(i.z + vec4(0.0, i1.z, i2.z, 1.0)) + i.y + vec4(0.0, i1.y, i2.y, 1.0)) + i.x + vec4(0.0, i1.x, i2.x, 1.0));
-                float n_ = 0.142857142857;
-                vec3 ns = n_ * D.wyz - D.xzx;
-                vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
-                vec4 x_ = floor(j * ns.z);
-                vec4 y_ = floor(j - 7.0 * x_);
-                vec4 x = x_ * ns.x + ns.yyyy;
-                vec4 y = y_ * ns.x + ns.yyyy;
-                vec4 h = 1.0 - abs(x) - abs(y);
-                vec4 b0 = vec4(x.xy, y.xy);
-                vec4 b1 = vec4(x.zw, y.zw);
-                vec4 s0 = floor(b0) * 2.0 + 1.0;
-                vec4 s1 = floor(b1) * 2.0 + 1.0;
-                vec4 sh = -step(h, vec4(0.0));
-                vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
-                vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
-                vec3 p0 = vec3(a0.xy, h.x);
-                vec3 p1 = vec3(a0.zw, h.y);
-                vec3 p2 = vec3(a1.xy, h.z);
-                vec3 p3 = vec3(a1.zw, h.w);
+                float n_ = 0.142857142857; vec3 ns = n_ * D.wyz - D.xzx;
+                vec4 j = p - 49.0 * floor(p * ns.z * ns.z); vec4 x_ = floor(j * ns.z); vec4 y_ = floor(j - 7.0 * x_);
+                vec4 x = x_ * ns.x + ns.yyyy; vec4 y = y_ * ns.x + ns.yyyy; vec4 h = 1.0 - abs(x) - abs(y);
+                vec4 b0 = vec4(x.xy, y.xy); vec4 b1 = vec4(x.zw, y.zw);
+                vec4 s0 = floor(b0) * 2.0 + 1.0; vec4 s1 = floor(b1) * 2.0 + 1.0; vec4 sh = -step(h, vec4(0.0));
+                vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy; vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
+                vec3 p0 = vec3(a0.xy, h.x); vec3 p1 = vec3(a0.zw, h.y); vec3 p2 = vec3(a1.xy, h.z); vec3 p3 = vec3(a1.zw, h.w);
                 vec4 norm = taylorInvSqrt(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
                 p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
                 vec4 m = max(0.6 - vec4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0);
-                m = m * m;
-                return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
+                m = m * m; return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
             }
 
             void main() {
                 vec3 pos = mix(position, positionTarget, uMorph);
                 float noiseVal = snoise(pos * 0.1 + uTime * 0.2 * uSpeed);
                 pos += normal * noiseVal * 0.3;
-
                 float dist = distance(pos, uMouse);
                 vec3 dir = normalize(pos - uMouse);
                 
-                if (uInteractType == 2.0) { // Explode
-                    if (dist < 25.0) {
-                        float force = (25.0 - dist) * 2.5; 
-                        float turbulence = snoise(pos * 0.5 + uTime * 5.0) * 2.0;
-                        pos += dir * force + vec3(turbulence); 
-                    }
-                } else if (uInteractType == 1.0) { // Implode
-                     if (dist < 35.0) pos -= dir * (dist * 0.9); 
-                } else if (uInteractType == 3.0) { // Point
-                    if (dist < 6.0) pos += dir * (6.0 - dist) * 1.5;
+                if (uInteractType == 2.0 && dist < 25.0) { // Explode
+                    float force = (25.0 - dist) * 2.5; float turbulence = snoise(pos * 0.5 + uTime * 5.0) * 2.0;
+                    pos += dir * force + vec3(turbulence); 
+                } else if (uInteractType == 1.0 && dist < 35.0) { // Implode
+                     pos -= dir * (dist * 0.9); 
+                } else if (uInteractType == 3.0 && dist < 6.0) { // Point
+                    pos += dir * (6.0 - dist) * 1.5;
                 }
 
                 vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
@@ -326,25 +278,14 @@
                 gl_PointSize = (160.0 * sizeRandom) / -mvPosition.z;
                 
                 float cNoise = snoise(pos * 0.05 + uTime * 0.5 * uSpeed);
-                vec3 colorA = vec3(0.0, 1.0, 1.0); // Cyan
-                vec3 colorB = vec3(1.0, 0.0, 0.8); // Magenta
+                vec3 colorA = vec3(0.0, 1.0, 1.0); vec3 colorB = vec3(1.0, 0.0, 0.8);
                 vColor = mix(colorA, colorB, cNoise + 0.5);
                 
                 if(uInteractType == 2.0 && dist < 15.0) vColor = vec3(1.0, 1.0, 0.5);
                 if(uInteractType == 4.0) vColor = mix(vColor, vec3(0.5, 0.8, 1.0), 0.7);
             }
         `;
-
-        const fragmentShader = `
-            varying vec3 vColor;
-            void main() {
-                float r = distance(gl_PointCoord, vec2(0.5));
-                if (r > 0.5) discard;
-                float glow = 1.0 - (r * 2.0);
-                glow = pow(glow, 2.0);
-                gl_FragColor = vec4(vColor, glow);
-            }
-        `;
+        const fragmentShader = `varying vec3 vColor; void main() { float r = distance(gl_PointCoord, vec2(0.5)); if (r > 0.5) discard; float glow = 1.0 - (r * 2.0); glow = pow(glow, 2.0); gl_FragColor = vec4(vColor, glow); }`;
 
         const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array(PARTICLE_COUNT * 3);
@@ -356,69 +297,31 @@
             const theta = 2 * Math.PI * u, phi = Math.acos(2 * v - 1);
             return { x: r*Math.sin(phi)*Math.cos(theta), y: r*Math.sin(phi)*Math.sin(theta), z: r*Math.cos(phi) };
         }
-
         for (let i = 0; i < PARTICLE_COUNT; i++) {
             const p = getSphere(12);
-            positions[i*3]=targets[i*3]=p.x;
-            positions[i*3+1]=targets[i*3+1]=p.y;
-            positions[i*3+2]=targets[i*3+2]=p.z;
+            positions[i*3]=targets[i*3]=p.x; positions[i*3+1]=targets[i*3+1]=p.y; positions[i*3+2]=targets[i*3+2]=p.z;
             randoms[i] = Math.random();
         }
-
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.setAttribute('positionTarget', new THREE.BufferAttribute(targets, 3));
         geometry.setAttribute('sizeRandom', new THREE.BufferAttribute(randoms, 1));
 
         const material = new THREE.ShaderMaterial({
             vertexShader, fragmentShader,
-            uniforms: {
-                uTime: { value: 0 },
-                uMorph: { value: 0 },
-                uMouse: { value: new THREE.Vector3(999,999,999) },
-                uInteractType: { value: 0.0 },
-                uSpeed: { value: 1.0 }
-            },
+            uniforms: { uTime: { value: 0 }, uMorph: { value: 0 }, uMouse: { value: new THREE.Vector3(999,999,999) }, uInteractType: { value: 0.0 }, uSpeed: { value: 1.0 } },
             transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
         });
-
         const particles = new THREE.Points(geometry, material);
         scene.add(particles);
 
-        // --- SHAPES ---
+        // --- SHAPES & GESTURES ---
         const shapes = {
-            sphere: () => {
-                const a = new Float32Array(PARTICLE_COUNT*3);
-                for(let i=0;i<PARTICLE_COUNT;i++) { const p=getSphere(12); a[i*3]=p.x;a[i*3+1]=p.y;a[i*3+2]=p.z; } return a;
-            },
-            heart: () => {
-                const a = new Float32Array(PARTICLE_COUNT*3);
-                for(let i=0;i<PARTICLE_COUNT;i++) {
-                    let t=Math.random()*Math.PI*2, s=Math.pow(Math.random(),0.33)*0.8;
-                    let x=16*Math.pow(Math.sin(t),3), y=13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);
-                    a[i*3]=x*s; a[i*3+1]=y*s; a[i*3+2]=(Math.random()-0.5)*5;
-                } return a;
-            },
-            saturn: () => {
-                const a = new Float32Array(PARTICLE_COUNT*3);
-                for(let i=0;i<PARTICLE_COUNT;i++){
-                    if(i<PARTICLE_COUNT*0.6){ const p=getSphere(8); a[i*3]=p.x;a[i*3+1]=p.y;a[i*3+2]=p.z; }
-                    else {
-                        const t=Math.random()*Math.PI*2, r=12+Math.random()*10;
-                        let x=r*Math.cos(t), z=r*Math.sin(t);
-                        a[i*3]=x; a[i*3+1]=x*Math.sin(0.3)-z*Math.cos(0.3); a[i*3+2]=x*Math.cos(0.3)+z*Math.sin(0.3);
-                    }
-                } return a;
-            },
-            spiral: () => {
-                const a = new Float32Array(PARTICLE_COUNT*3);
-                for(let i=0;i<PARTICLE_COUNT;i++){
-                    const ang=i*0.005, r=i*0.0005*20;
-                    a[i*3]=r*Math.cos(ang); a[i*3+1]=(Math.random()-0.5)*5; a[i*3+2]=r*Math.sin(ang);
-                } return a;
-            }
+            sphere: () => { const a = new Float32Array(PARTICLE_COUNT*3); for(let i=0;i<PARTICLE_COUNT;i++) { const p=getSphere(12); a[i*3]=p.x;a[i*3+1]=p.y;a[i*3+2]=p.z; } return a; },
+            heart: () => { const a = new Float32Array(PARTICLE_COUNT*3); for(let i=0;i<PARTICLE_COUNT;i++) { let t=Math.random()*Math.PI*2, s=Math.pow(Math.random(),0.33)*0.8; let x=16*Math.pow(Math.sin(t),3), y=13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t); a[i*3]=x*s; a[i*3+1]=y*s; a[i*3+2]=(Math.random()-0.5)*5; } return a; },
+            saturn: () => { const a = new Float32Array(PARTICLE_COUNT*3); for(let i=0;i<PARTICLE_COUNT;i++){ if(i<PARTICLE_COUNT*0.6){ const p=getSphere(8); a[i*3]=p.x;a[i*3+1]=p.y;a[i*3+2]=p.z; } else { const t=Math.random()*Math.PI*2, r=12+Math.random()*10; let x=r*Math.cos(t), z=r*Math.sin(t); a[i*3]=x; a[i*3+1]=x*Math.sin(0.3)-z*Math.cos(0.3); a[i*3+2]=x*Math.cos(0.3)+z*Math.sin(0.3); } } return a; },
+            spiral: () => { const a = new Float32Array(PARTICLE_COUNT*3); for(let i=0;i<PARTICLE_COUNT;i++){ const ang=i*0.005, r=i*0.0005*20; a[i*3]=r*Math.cos(ang); a[i*3+1]=(Math.random()-0.5)*5; a[i*3+2]=r*Math.sin(ang); } return a; }
         };
-        const shapeKeys = Object.keys(shapes);
-        let currentShapeIndex = 0;
+        const shapeKeys = Object.keys(shapes); let currentShapeIndex = 0;
 
         function switchShape(name) {
             playSound('morph');
@@ -426,19 +329,14 @@
             geometry.attributes.positionTarget.needsUpdate = true;
             gsap.fromTo(material.uniforms.uMorph, {value: 0}, {value: 1, duration: 2});
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            const btn = document.getElementById('btn-'+name);
-            if(btn) btn.classList.add('active');
+            const btn = document.getElementById('btn-'+name); if(btn) btn.classList.add('active');
         }
 
-        // --- GESTURE LOGIC ---
         function detectGesture(lm) {
             const isExtended = (tip, pip) => lm[tip].y < lm[pip].y;
-            const indexUp = isExtended(8, 6);
-            const middleUp = isExtended(12, 10);
-            const ringUp = isExtended(16, 14);
-            const pinkyUp = isExtended(20, 18);
+            const indexUp = isExtended(8, 6); const middleUp = isExtended(12, 10);
+            const ringUp = isExtended(16, 14); const pinkyUp = isExtended(20, 18);
             const fingersUpCount = [indexUp, middleUp, ringUp, pinkyUp].filter(Boolean).length;
-            
             const dPinch = Math.hypot(lm[8].x - lm[4].x, lm[8].y - lm[4].y);
             if (dPinch < 0.05) return "PINCH";
             if (fingersUpCount === 0) return "FIST";
@@ -450,9 +348,8 @@
         async function enableCam() {
             audioCtx = new AudioCtx();
             const btn = document.getElementById('start-btn');
-            btn.innerText = "Initializing...";
-            btn.style.opacity = 0.5;
-
+            btn.innerHTML = 'Initialize Core <span style="font-size:10px">/// LOADING...</span>';
+            
             try {
                 const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
                 handLandmarker = await HandLandmarker.createFromOptions(vision, {
@@ -462,71 +359,50 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
                 video.addEventListener("loadeddata", () => {
-                    gsap.to("#intro-screen", { opacity: 0, pointerEvents: 'none' });
+                    // Fade out intro, show UI
+                    gsap.to("#intro-screen", { opacity: 0, pointerEvents: 'none', duration: 0.8 });
                     document.getElementById("video-container").style.opacity = 1;
                     predictWebcam();
                 });
             } catch (err) {
-                alert("Camera Access Error: " + err);
+                alert("Camera Error: " + err);
                 gsap.to("#intro-screen", { opacity: 0, pointerEvents: 'none' });
             }
         }
 
-        let targetX = 0, targetY = 0, currentX = 0, currentY = 0;
-        let isMouseDown = false;
+        let targetX = 0, targetY = 0, currentX = 0, currentY = 0; let isMouseDown = false;
 
         async function predictWebcam() {
             let gesture = "NONE";
-            
             if (handLandmarker && video.currentTime !== 0) {
                 const results = handLandmarker.detectForVideo(video, performance.now());
                 if (results.landmarks.length > 0) {
-                    const lm = results.landmarks[0];
-                    gesture = detectGesture(lm);
-                    targetX = (1 - lm[8].x) * 40 - 20; 
-                    targetY = -(lm[8].y) * 30 + 15;
+                    const lm = results.landmarks[0]; gesture = detectGesture(lm);
+                    targetX = (1 - lm[8].x) * 40 - 20; targetY = -(lm[8].y) * 30 + 15;
                     cursorMesh.visible = true;
-                } else {
-                    cursorMesh.visible = false;
-                }
+                } else cursorMesh.visible = false;
             }
-
             if (!cursorMesh.visible) {
                  cursorMesh.visible = true;
-                 if(isMouseDown) gesture = "FIST";
-                 else gesture = "POINT";
+                 if(isMouseDown) gesture = "FIST"; else gesture = "POINT";
             }
 
-            let interactType = 0.0;
-            let cursorColor = 0x00ffff;
-            let label = "POINTING";
-            let targetSpeed = 1.0;
+            let interactType = 0.0; let cursorColor = 0x00ffff; let label = "POINTING"; let targetSpeed = 1.0;
 
             if (gesture !== lastGesture) {
-                if (gesture === "PALM") playSound('explode');
-                if (gesture === "FIST") playSound('implode');
-                if (gesture === "PINCH") playSound('freeze');
+                if (gesture === "PALM") playSound('explode'); if (gesture === "FIST") playSound('implode'); if (gesture === "PINCH") playSound('freeze');
                 lastGesture = gesture;
             }
 
-            if (gesture === "FIST") {
-                interactType = 1.0; cursorColor = 0xff0055; label = "IMPLODE";
-            } else if (gesture === "PALM") {
-                interactType = 2.0; cursorColor = 0xffaa00; label = "EXPLODE";
-            } else if (gesture === "PINCH") {
-                interactType = 4.0; targetSpeed = 0.05; cursorColor = 0xffffff; label = "FREEZE";
-            } else if (gesture === "PEACE") {
-                interactType = 0.0;
-                const now = Date.now();
+            if (gesture === "FIST") { interactType = 1.0; cursorColor = 0xff0055; label = "IMPLODE"; } 
+            else if (gesture === "PALM") { interactType = 2.0; cursorColor = 0xffaa00; label = "EXPLODE"; } 
+            else if (gesture === "PINCH") { interactType = 4.0; targetSpeed = 0.05; cursorColor = 0xffffff; label = "FREEZE"; } 
+            else if (gesture === "PEACE") {
+                interactType = 0.0; const now = Date.now();
                 if (now - lastGestureTime > 2000) {
-                    currentShapeIndex = (currentShapeIndex + 1) % shapeKeys.length;
-                    switchShape(shapeKeys[currentShapeIndex]);
-                    lastGestureTime = now;
-                }
-                label = "MORPHING";
-            } else {
-                interactType = 3.0; // Point
-            }
+                    currentShapeIndex = (currentShapeIndex + 1) % shapeKeys.length; switchShape(shapeKeys[currentShapeIndex]); lastGestureTime = now;
+                } label = "MORPHING";
+            } else interactType = 3.0;
 
             material.uniforms.uInteractType.value = interactType;
             cursorMesh.material.color.setHex(cursorColor);
@@ -535,30 +411,20 @@
             
             timeSpeed += (targetSpeed - timeSpeed) * 0.1;
             material.uniforms.uSpeed.value = timeSpeed;
-
             requestAnimationFrame(predictWebcam);
         }
 
-        window.addEventListener('mousemove', (e) => {
-            if(!handLandmarker || !cursorMesh.visible) {
-                targetX = (e.clientX / window.innerWidth) * 40 - 20;
-                targetY = -(e.clientY / window.innerHeight) * 30 + 15;
-            }
-        });
-        window.addEventListener('mousedown', () => isMouseDown = true);
-        window.addEventListener('mouseup', () => isMouseDown = false);
+        window.addEventListener('mousemove', (e) => { if(!handLandmarker || !cursorMesh.visible) { targetX = (e.clientX / window.innerWidth) * 40 - 20; targetY = -(e.clientY / window.innerHeight) * 30 + 15; } });
+        window.addEventListener('mousedown', () => isMouseDown = true); window.addEventListener('mouseup', () => isMouseDown = false);
 
         const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
             material.uniforms.uTime.value = time;
-            
-            currentX += (targetX - currentX) * 0.1;
-            currentY += (targetY - currentY) * 0.1;
+            currentX += (targetX - currentX) * 0.1; currentY += (targetY - currentY) * 0.1;
             material.uniforms.uMouse.value.set(currentX, currentY, 0);
             cursorMesh.position.set(currentX, currentY, 10);
-            
             particles.rotation.y += 0.005 * material.uniforms.uSpeed.value;
             composer.render();
         }
@@ -569,13 +435,8 @@
         document.getElementById('btn-saturn').onclick = () => switchShape('saturn');
         document.getElementById('btn-spiral').onclick = () => switchShape('spiral');
 
-        animate();
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
-        });
+        animate(); // Start rendering background immediately
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight); });
     </script>
 </body>
 </html>
