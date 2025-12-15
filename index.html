@@ -2,95 +2,141 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Particle Core - Final</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>HoloFlux Engine | Final Polish</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; user-select: none; }
-        
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
         
-        /* HUD */
+        /* HUD & FEED */
         #video-container {
             position: absolute; bottom: 20px; right: 20px; 
-            width: 240px; height: 180px; 
-            border: 1px solid rgba(0, 255, 255, 0.3);
-            border-radius: 10px; overflow: hidden; z-index: 20;
-            background: rgba(0,0,0,0.8);
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
-            opacity: 0; transition: opacity 0.5s;
+            width: 160px; height: 120px; 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px; overflow: hidden; z-index: 20;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            opacity: 0; transition: opacity 0.5s; pointer-events: none;
         }
         
         #video-feed {
             width: 100%; height: 100%; object-fit: cover;
-            transform: scaleX(-1); opacity: 0.6;
+            transform: scaleX(-1); opacity: 0.5;
         }
 
         #gesture-label {
-            position: absolute; top: 10px; left: 10px;
-            color: cyan; font-size: 14px; font-weight: bold; text-transform: uppercase;
-            text-shadow: 0 0 8px cyan; background: rgba(0,0,0,0.5);
-            padding: 2px 8px; border-radius: 4px;
+            position: absolute; top: 8px; left: 8px;
+            color: white; font-size: 10px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(0,255,255,0.5);
         }
 
-        /* START SCREEN */
+        /* START SCREEN (Updated Gradient) */
         #intro-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+            /* Gradient matching particles: Deep Blue -> Magenta */
+            background: radial-gradient(circle at center, #1a0b2e 0%, #000000 100%);
             z-index: 100; display: flex; flex-direction: column; 
             align-items: center; justify-content: center; color: white;
+            transition: opacity 0.8s ease;
         }
         
-        h1 { font-weight: 200; letter-spacing: 8px; margin-bottom: 5px; text-transform: uppercase; text-shadow: 0 0 20px rgba(255,255,255,0.5); }
+        /* Animated Gradient Text */
+        h1 { 
+            font-weight: 800; letter-spacing: 4px; margin-bottom: 10px; 
+            text-transform: uppercase; font-size: 3rem; text-align: center;
+            background: linear-gradient(90deg, #00ffff, #ff00cc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.3));
+        }
         
+        p { color: rgba(255,255,255,0.7); font-size: 14px; margin-bottom: 40px; letter-spacing: 2px; font-weight: 300; }
+
         #start-btn {
-            background: transparent; color: cyan; border: 1px solid cyan;
-            padding: 15px 50px; font-size: 16px; letter-spacing: 4px;
-            text-transform: uppercase; cursor: pointer; transition: 0.3s;
-            margin-top: 30px;
+            background: rgba(255, 255, 255, 0.1); 
+            color: white; border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 18px 50px; font-size: 14px; letter-spacing: 3px;
+            text-transform: uppercase; cursor: pointer; transition: all 0.4s;
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
         }
-        #start-btn:hover { background: cyan; color: black; box-shadow: 0 0 40px cyan; }
+        #start-btn:hover { 
+            background: white; color: black; 
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.4);
+            transform: scale(1.05);
+        }
+
+        /* iOS GLASS BAR (Bottom UI) */
+        #ui-layer {
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            z-index: 10; display: flex; gap: 8px; justify-content: center;
+            padding: 10px 10px;
+            
+            /* Glass Effect */
+            background: rgba(20, 20, 20, 0.4);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            
+            pointer-events: auto;
+        }
+        
+        button.nav-btn {
+            background: transparent; border: none; color: rgba(255,255,255,0.6);
+            padding: 10px 20px; border-radius: 18px; cursor: pointer;
+            font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+        
+        button.nav-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        
+        button.nav-btn.active { 
+            background: rgba(255,255,255,0.9); color: black; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
 
         /* INSTRUCTIONS */
         #cheat-sheet {
-            position: absolute; top: 20px; right: 20px; text-align: right;
-            color: rgba(255,255,255,0.4); font-size: 12px; line-height: 1.8;
-            pointer-events: none; z-index: 5;
+            position: absolute; top: 30px; right: 30px; text-align: right;
+            color: rgba(255,255,255,0.5); font-size: 12px; line-height: 2.2;
+            pointer-events: none; z-index: 5; font-weight: 500;
+            background: rgba(0,0,0,0.3); padding: 15px 25px; border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(5px);
         }
-        b { color: white; }
-
-        /* UI BUTTONS */
-        #ui-layer {
-            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-            z-index: 10; display: flex; gap: 10px;
+        b { color: white; font-weight: 700; margin-left: 5px; }
+        
+        @media (max-width: 600px) {
+            #cheat-sheet { display: none; }
+            #video-container { width: 100px; height: 75px; bottom: 100px; right: 20px; }
+            h1 { font-size: 2rem; }
+            #ui-layer { bottom: 20px; width: 85%; }
         }
-        button.nav-btn {
-            background: rgba(255,255,255,0.1); border: none; color: white;
-            padding: 8px 16px; border-radius: 20px; cursor: pointer;
-            font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
-            transition: 0.2s;
-        }
-        button.nav-btn.active { background: white; color: black; }
     </style>
 </head>
 <body>
 
     <div id="intro-screen">
-        <h1>Particle Core</h1>
-        <p style="opacity: 0.7; letter-spacing: 1px;">GESTURE CONTROL SYSTEM</p>
-        <button id="start-btn">Initialize</button>
+        <h1>HoloFlux Engine</h1>
+        <p>GESTURE INTERFACE // SYSTEM READY</p>
+        <button id="start-btn">Initialize Core</button>
     </div>
 
     <div id="cheat-sheet">
         🖐️ <b>PALM:</b> Explode<br>
         ✊ <b>FIST:</b> Implode<br>
         👌 <b>PINCH:</b> Time Freeze<br>
-        ☝️ <b>POINT:</b> Inter Point<br>
+        ☝️ <b>POINT:</b> Interact<br>
         ✌️ <b>PEACE:</b> Next Shape
     </div>
 
     <div id="video-container">
         <video id="video-feed" playsinline muted autoplay></video>
-        <div id="gesture-label">System Standby</div>
+        <div id="gesture-label">Standby</div>
     </div>
 
     <div id="canvas-container"></div>
@@ -120,15 +166,65 @@
         import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
         import { gsap } from 'https://cdn.skypack.dev/gsap';
 
+        // --- AUDIO ENGINE ---
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'explode') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, now);
+                osc.frequency.exponentialRampToValueAtTime(10, now + 0.5);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            } 
+            else if (type === 'implode') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(50, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.3);
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.4, now + 0.2);
+                gain.gain.linearRampToValueAtTime(0, now + 0.4);
+                osc.start(now); osc.stop(now + 0.4);
+            }
+            else if (type === 'freeze') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 1.0);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0, now + 1.0);
+                osc.start(now); osc.stop(now + 1.0);
+            }
+            else if (type === 'morph') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(880, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            }
+        }
+
         // --- SETUP ---
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const PARTICLE_COUNT = isMobile ? 20000 : 60000;
+
         let handLandmarker;
         const video = document.getElementById("video-feed");
         const gestureLabel = document.getElementById("gesture-label");
         let lastGestureTime = 0; 
-        let timeSpeed = 1.0; // For time freeze effect
+        let timeSpeed = 1.0; 
+        let lastGesture = "";
 
         // --- THREE.JS ---
-        const PARTICLE_COUNT = 55000;
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 30;
@@ -138,34 +234,29 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // Tracker Ring
         const cursorMesh = new THREE.Mesh(
             new THREE.RingGeometry(0.4, 0.5, 32),
             new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8, side: THREE.DoubleSide })
         );
         scene.add(cursorMesh);
 
-        // Post Process
         const renderScene = new RenderPass(scene, camera);
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0; bloomPass.strength = 1.4; bloomPass.radius = 0.5;
+        bloomPass.threshold = 0; bloomPass.strength = 1.2; bloomPass.radius = 0.5;
         const composer = new EffectComposer(renderer);
         composer.addPass(renderScene); composer.addPass(bloomPass);
 
-        // --- SHADER (ENHANCED PHYSICS) ---
+        // --- SHADER ---
         const vertexShader = `
             uniform float uTime;
             uniform float uMorph;
             uniform vec3 uMouse;
-            uniform float uInteractType; // 0=None, 1=Attract, 2=Repel, 3=Standard, 4=Freeze
+            uniform float uInteractType; 
             uniform float uSpeed; 
-
             attribute vec3 positionTarget;
             attribute float sizeRandom;
-            
             varying vec3 vColor;
             
-            // Noise
             vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
             vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
             vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
@@ -211,54 +302,35 @@
             }
 
             void main() {
-                // Base Morph
                 vec3 pos = mix(position, positionTarget, uMorph);
-                
-                // Breathing noise
                 float noiseVal = snoise(pos * 0.1 + uTime * 0.2 * uSpeed);
                 pos += normal * noiseVal * 0.3;
 
-                // Physics
                 float dist = distance(pos, uMouse);
                 vec3 dir = normalize(pos - uMouse);
                 
-                if (uInteractType == 2.0) { 
-                    // 🖐️ EXPLODE (Violent)
+                if (uInteractType == 2.0) { // Explode
                     if (dist < 25.0) {
                         float force = (25.0 - dist) * 2.5; 
-                        // Add turbulence
                         float turbulence = snoise(pos * 0.5 + uTime * 5.0) * 2.0;
                         pos += dir * force + vec3(turbulence); 
                     }
-                } else if (uInteractType == 1.0) {
-                     // ✊ IMPLODE (Black Hole)
-                     if (dist < 35.0) {
-                        // Strong pull
-                        pos -= dir * (dist * 0.9); 
-                     }
-                } else if (uInteractType == 3.0) {
-                    // ☝️ POINT (Swirl)
-                    if (dist < 6.0) {
-                        pos += dir * (6.0 - dist) * 1.5;
-                    }
-                } else if (uInteractType == 4.0) {
-                    // 👌 FREEZE (Stop physics, just minor vibration)
-                    // Do nothing here, uSpeed handles the noise freeze
+                } else if (uInteractType == 1.0) { // Implode
+                     if (dist < 35.0) pos -= dir * (dist * 0.9); 
+                } else if (uInteractType == 3.0) { // Point
+                    if (dist < 6.0) pos += dir * (6.0 - dist) * 1.5;
                 }
 
                 vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
                 gl_Position = projectionMatrix * mvPosition;
                 gl_PointSize = (160.0 * sizeRandom) / -mvPosition.z;
                 
-                // Color Logic
                 float cNoise = snoise(pos * 0.05 + uTime * 0.5 * uSpeed);
                 vec3 colorA = vec3(0.0, 1.0, 1.0); // Cyan
                 vec3 colorB = vec3(1.0, 0.0, 0.8); // Magenta
                 vColor = mix(colorA, colorB, cNoise + 0.5);
                 
-                // Hot color for explosion
                 if(uInteractType == 2.0 && dist < 15.0) vColor = vec3(1.0, 1.0, 0.5);
-                // Ice color for freeze
                 if(uInteractType == 4.0) vColor = mix(vColor, vec3(0.5, 0.8, 1.0), 0.7);
             }
         `;
@@ -274,7 +346,6 @@
             }
         `;
 
-        // Particles
         const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array(PARTICLE_COUNT * 3);
         const targets = new Float32Array(PARTICLE_COUNT * 3);
@@ -350,6 +421,7 @@
         let currentShapeIndex = 0;
 
         function switchShape(name) {
+            playSound('morph');
             geometry.attributes.positionTarget.set(shapes[name]());
             geometry.attributes.positionTarget.needsUpdate = true;
             gsap.fromTo(material.uniforms.uMorph, {value: 0}, {value: 1, duration: 2});
@@ -358,138 +430,136 @@
             if(btn) btn.classList.add('active');
         }
 
-        // --- 2. ADVANCED GESTURE ENGINE ---
+        // --- GESTURE LOGIC ---
         function detectGesture(lm) {
-            // Helper: Is Finger Extended? (Tip Y < PIP Y) - Note: Y is inverted in MediaPipe video coords
             const isExtended = (tip, pip) => lm[tip].y < lm[pip].y;
-            
-            // Finger States
-            const thumbUp = isExtended(4, 2); // Less reliable for thumb, but okay for open palm
             const indexUp = isExtended(8, 6);
             const middleUp = isExtended(12, 10);
             const ringUp = isExtended(16, 14);
             const pinkyUp = isExtended(20, 18);
-
             const fingersUpCount = [indexUp, middleUp, ringUp, pinkyUp].filter(Boolean).length;
             
-            // 1. PINCH (Thumb touches Index)
             const dPinch = Math.hypot(lm[8].x - lm[4].x, lm[8].y - lm[4].y);
             if (dPinch < 0.05) return "PINCH";
-
-            // 2. FIST (0 or 1 finger up)
             if (fingersUpCount === 0) return "FIST";
-
-            // 3. PALM (All 4 fingers up + Thumb usually out)
             if (fingersUpCount === 4) return "PALM";
-
-            // 4. PEACE (Index + Middle Up only)
             if (indexUp && middleUp && !ringUp && !pinkyUp) return "PEACE";
-
-            // Default
             return "POINT";
         }
 
-        // --- CAMERA ---
         async function enableCam() {
-            document.getElementById('start-btn').innerText = "Loading AI...";
-            const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
-            handLandmarker = await HandLandmarker.createFromOptions(vision, {
-                baseOptions: { modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`, delegate: "GPU" },
-                runningMode: "VIDEO", numHands: 1, minHandDetectionConfidence: 0.3, minTrackingConfidence: 0.3
-            });
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            video.srcObject = stream;
-            video.addEventListener("loadeddata", () => {
-                gsap.to("#intro-screen", { opacity: 0, onComplete: () => document.getElementById("intro-screen").style.display='none' });
-                document.getElementById("video-container").style.opacity = 1;
-                predictWebcam();
-            });
+            audioCtx = new AudioCtx();
+            const btn = document.getElementById('start-btn');
+            btn.innerText = "Initializing...";
+            btn.style.opacity = 0.5;
+
+            try {
+                const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
+                handLandmarker = await HandLandmarker.createFromOptions(vision, {
+                    baseOptions: { modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`, delegate: "GPU" },
+                    runningMode: "VIDEO", numHands: 1, minHandDetectionConfidence: 0.3, minTrackingConfidence: 0.3
+                });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                video.addEventListener("loadeddata", () => {
+                    gsap.to("#intro-screen", { opacity: 0, pointerEvents: 'none' });
+                    document.getElementById("video-container").style.opacity = 1;
+                    predictWebcam();
+                });
+            } catch (err) {
+                alert("Camera Access Error: " + err);
+                gsap.to("#intro-screen", { opacity: 0, pointerEvents: 'none' });
+            }
         }
 
         let targetX = 0, targetY = 0, currentX = 0, currentY = 0;
+        let isMouseDown = false;
 
         async function predictWebcam() {
+            let gesture = "NONE";
+            
             if (handLandmarker && video.currentTime !== 0) {
                 const results = handLandmarker.detectForVideo(video, performance.now());
-                
                 if (results.landmarks.length > 0) {
                     const lm = results.landmarks[0];
-                    const gesture = detectGesture(lm);
-                    
-                    // Coordinates (Index Tip)
+                    gesture = detectGesture(lm);
                     targetX = (1 - lm[8].x) * 40 - 20; 
                     targetY = -(lm[8].y) * 30 + 15;
                     cursorMesh.visible = true;
-
-                    // --- STATE MACHINE ---
-                    let interactType = 0.0;
-                    let cursorColor = 0x00ffff;
-                    let label = "POINTING";
-                    let targetSpeed = 1.0;
-
-                    if (gesture === "FIST") {
-                        interactType = 1.0; // Implode
-                        cursorColor = 0xff0055; // Red
-                        label = "FIST: IMPLODE";
-                    } else if (gesture === "PALM") {
-                        interactType = 2.0; // Explode
-                        cursorColor = 0xffaa00; // Orange
-                        label = "PALM: EXPLODE";
-                    } else if (gesture === "PINCH") {
-                        interactType = 4.0; // Freeze
-                        targetSpeed = 0.05; // Slow down time
-                        cursorColor = 0xffffff; // White
-                        label = "PINCH: FREEZE";
-                    } else if (gesture === "PEACE") {
-                        interactType = 0.0;
-                        const now = Date.now();
-                        if (now - lastGestureTime > 2000) {
-                            currentShapeIndex = (currentShapeIndex + 1) % shapeKeys.length;
-                            switchShape(shapeKeys[currentShapeIndex]);
-                            lastGestureTime = now;
-                        }
-                        label = "PEACE: NEXT SHAPE";
-                    } else {
-                        interactType = 3.0; // Standard Point
-                    }
-
-                    // Apply
-                    material.uniforms.uInteractType.value = interactType;
-                    cursorMesh.material.color.setHex(cursorColor);
-                    gestureLabel.innerText = label;
-                    gestureLabel.style.color = (gesture === "PINCH" ? "white" : (gesture === "FIST" ? "#ff0055" : (gesture === "PALM" ? "#ffaa00" : "cyan")));
-                    
-                    // Smooth time speed transition
-                    timeSpeed += (targetSpeed - timeSpeed) * 0.1;
-                    material.uniforms.uSpeed.value = timeSpeed;
-
                 } else {
-                    gestureLabel.innerText = "NO HAND";
-                    gestureLabel.style.color = "#555";
-                    material.uniforms.uInteractType.value = 0.0;
                     cursorMesh.visible = false;
                 }
             }
+
+            if (!cursorMesh.visible) {
+                 cursorMesh.visible = true;
+                 if(isMouseDown) gesture = "FIST";
+                 else gesture = "POINT";
+            }
+
+            let interactType = 0.0;
+            let cursorColor = 0x00ffff;
+            let label = "POINTING";
+            let targetSpeed = 1.0;
+
+            if (gesture !== lastGesture) {
+                if (gesture === "PALM") playSound('explode');
+                if (gesture === "FIST") playSound('implode');
+                if (gesture === "PINCH") playSound('freeze');
+                lastGesture = gesture;
+            }
+
+            if (gesture === "FIST") {
+                interactType = 1.0; cursorColor = 0xff0055; label = "IMPLODE";
+            } else if (gesture === "PALM") {
+                interactType = 2.0; cursorColor = 0xffaa00; label = "EXPLODE";
+            } else if (gesture === "PINCH") {
+                interactType = 4.0; targetSpeed = 0.05; cursorColor = 0xffffff; label = "FREEZE";
+            } else if (gesture === "PEACE") {
+                interactType = 0.0;
+                const now = Date.now();
+                if (now - lastGestureTime > 2000) {
+                    currentShapeIndex = (currentShapeIndex + 1) % shapeKeys.length;
+                    switchShape(shapeKeys[currentShapeIndex]);
+                    lastGestureTime = now;
+                }
+                label = "MORPHING";
+            } else {
+                interactType = 3.0; // Point
+            }
+
+            material.uniforms.uInteractType.value = interactType;
+            cursorMesh.material.color.setHex(cursorColor);
+            gestureLabel.innerText = label;
+            gestureLabel.style.color = (gesture === "PINCH" ? "white" : (gesture === "FIST" ? "#ff0055" : (gesture === "PALM" ? "#ffaa00" : "cyan")));
+            
+            timeSpeed += (targetSpeed - timeSpeed) * 0.1;
+            material.uniforms.uSpeed.value = timeSpeed;
+
             requestAnimationFrame(predictWebcam);
         }
 
-        // Loop
+        window.addEventListener('mousemove', (e) => {
+            if(!handLandmarker || !cursorMesh.visible) {
+                targetX = (e.clientX / window.innerWidth) * 40 - 20;
+                targetY = -(e.clientY / window.innerHeight) * 30 + 15;
+            }
+        });
+        window.addEventListener('mousedown', () => isMouseDown = true);
+        window.addEventListener('mouseup', () => isMouseDown = false);
+
         const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
             material.uniforms.uTime.value = time;
             
-            // Lerp Mouse
             currentX += (targetX - currentX) * 0.1;
             currentY += (targetY - currentY) * 0.1;
             material.uniforms.uMouse.value.set(currentX, currentY, 0);
-
             cursorMesh.position.set(currentX, currentY, 10);
             
-            // Rotation depends on speed (freeze stops rotation too)
             particles.rotation.y += 0.005 * material.uniforms.uSpeed.value;
-            
             composer.render();
         }
 
@@ -509,5 +579,3 @@
     </script>
 </body>
 </html>
-
-
