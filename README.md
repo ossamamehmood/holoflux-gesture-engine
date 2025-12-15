@@ -22,10 +22,6 @@
   </h3>
 </div>
 
-<p align="left">
-  <img alt="" style="{max-height: 20px}" src="./.github/holoflux.gif">
-</p>
-
 ---
 
 ## 🔮 What is Holoflux?
@@ -43,6 +39,10 @@ It renders **55,000 interactive particles** that react to your physical hand mov
 * **🕸️ State Machine Engine:** Intelligently distinguishes between complex gestures (Pinch vs. Fist vs. Palm).
 * **🌑 Low-Light Capable:** Uses Lerp (Linear Interpolation) smoothing algorithms to filter out webcam noise in dark environments.
 * **💎 Cinematic Post-Processing:** Integrated UnrealBloomPass for that neon, sci-fi aesthetic.
+
+<p align="left">
+  <img alt="" style="{max-height: 20px}" src="./.github/holoflux.gif">
+</p>
 
 ---
 
