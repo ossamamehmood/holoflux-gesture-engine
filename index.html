@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gesture God Mode</title>
+    <title>Particle Core - Final</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; user-select: none; }
         
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
         
-        /* HUD & FEED */
+        /* HUD */
         #video-container {
             position: absolute; bottom: 20px; right: 20px; 
             width: 240px; height: 180px; 
@@ -81,10 +81,10 @@
     </div>
 
     <div id="cheat-sheet">
-        🖐️ <b>PALM:</b> Destroy<br>
-        ✊ <b>FIST:</b> Rebuild<br>
-        ✌️ <b>PEACE:</b> Next Shape<br>
-        ☝️ <b>POINT:</b> Interact
+        🖐️ <b>PALM:</b> Explode<br>
+        ✊ <b>FIST:</b> Implode<br>
+        👌 <b>PINCH:</b> Time Freeze<br>
+        ✌️ <b>PEACE:</b> Next Shape
     </div>
 
     <div id="video-container">
@@ -119,14 +119,15 @@
         import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
         import { gsap } from 'https://cdn.skypack.dev/gsap';
 
-        // --- VARS ---
+        // --- SETUP ---
         let handLandmarker;
         const video = document.getElementById("video-feed");
         const gestureLabel = document.getElementById("gesture-label");
-        let lastGestureTime = 0; // Debounce for switching shapes
+        let lastGestureTime = 0; 
+        let timeSpeed = 1.0; // For time freeze effect
 
-        // --- 1. THREE.JS SETUP ---
-        const PARTICLE_COUNT = 50000;
+        // --- THREE.JS ---
+        const PARTICLE_COUNT = 55000;
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 30;
@@ -150,19 +151,20 @@
         const composer = new EffectComposer(renderer);
         composer.addPass(renderScene); composer.addPass(bloomPass);
 
-        // --- SHADER ---
+        // --- SHADER (ENHANCED PHYSICS) ---
         const vertexShader = `
             uniform float uTime;
             uniform float uMorph;
             uniform vec3 uMouse;
-            uniform float uInteractType; // 0=None, 1=Attract(Fist), 2=Repel(Palm), 3=Standard
-            
+            uniform float uInteractType; // 0=None, 1=Attract, 2=Repel, 3=Standard, 4=Freeze
+            uniform float uSpeed; 
+
             attribute vec3 positionTarget;
             attribute float sizeRandom;
             
             varying vec3 vColor;
             
-            // Simplex Noise (Standard)
+            // Noise
             vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
             vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
             vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
@@ -211,47 +213,52 @@
                 // Base Morph
                 vec3 pos = mix(position, positionTarget, uMorph);
                 
-                // Add "Breathing" Noise
-                float noiseVal = snoise(pos * 0.1 + uTime * 0.2);
+                // Breathing noise
+                float noiseVal = snoise(pos * 0.1 + uTime * 0.2 * uSpeed);
                 pos += normal * noiseVal * 0.3;
 
-                // --- GESTURE PHYSICS ---
+                // Physics
                 float dist = distance(pos, uMouse);
                 vec3 dir = normalize(pos - uMouse);
                 
                 if (uInteractType == 2.0) { 
-                    // 🖐️ PALM: FORCE PUSH (EXPLODE)
-                    // Massive repulsion range (25.0)
+                    // 🖐️ EXPLODE (Violent)
                     if (dist < 25.0) {
-                        float force = (25.0 - dist) * 2.0; 
-                        pos += dir * force; 
+                        float force = (25.0 - dist) * 2.5; 
+                        // Add turbulence
+                        float turbulence = snoise(pos * 0.5 + uTime * 5.0) * 2.0;
+                        pos += dir * force + vec3(turbulence); 
                     }
                 } else if (uInteractType == 1.0) {
-                     // ✊ FIST: BLACK HOLE (REBUILD)
-                     // Strong attraction
-                     if (dist < 30.0) {
-                        // Pull towards mouse
-                        pos -= dir * (dist * 0.8); 
+                     // ✊ IMPLODE (Black Hole)
+                     if (dist < 35.0) {
+                        // Strong pull
+                        pos -= dir * (dist * 0.9); 
                      }
                 } else if (uInteractType == 3.0) {
-                    // ☝️ POINT: Standard Swirl
-                    if (dist < 5.0) {
-                        pos += dir * (5.0 - dist) * 1.0;
+                    // ☝️ POINT (Swirl)
+                    if (dist < 6.0) {
+                        pos += dir * (6.0 - dist) * 1.5;
                     }
+                } else if (uInteractType == 4.0) {
+                    // 👌 FREEZE (Stop physics, just minor vibration)
+                    // Do nothing here, uSpeed handles the noise freeze
                 }
 
                 vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
                 gl_Position = projectionMatrix * mvPosition;
-                gl_PointSize = (150.0 * sizeRandom) / -mvPosition.z;
+                gl_PointSize = (160.0 * sizeRandom) / -mvPosition.z;
                 
-                // Dynamic Color
-                float cNoise = snoise(pos * 0.05 + uTime * 0.5);
+                // Color Logic
+                float cNoise = snoise(pos * 0.05 + uTime * 0.5 * uSpeed);
                 vec3 colorA = vec3(0.0, 1.0, 1.0); // Cyan
                 vec3 colorB = vec3(1.0, 0.0, 0.8); // Magenta
                 vColor = mix(colorA, colorB, cNoise + 0.5);
                 
-                // If exploding, turn white/hot
-                if(uInteractType == 2.0 && dist < 15.0) vColor = vec3(1.0, 1.0, 0.8);
+                // Hot color for explosion
+                if(uInteractType == 2.0 && dist < 15.0) vColor = vec3(1.0, 1.0, 0.5);
+                // Ice color for freeze
+                if(uInteractType == 4.0) vColor = mix(vColor, vec3(0.5, 0.8, 1.0), 0.7);
             }
         `;
 
@@ -296,7 +303,8 @@
                 uTime: { value: 0 },
                 uMorph: { value: 0 },
                 uMouse: { value: new THREE.Vector3(999,999,999) },
-                uInteractType: { value: 0.0 } 
+                uInteractType: { value: 0.0 },
+                uSpeed: { value: 1.0 }
             },
             transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
         });
@@ -344,51 +352,39 @@
             geometry.attributes.positionTarget.set(shapes[name]());
             geometry.attributes.positionTarget.needsUpdate = true;
             gsap.fromTo(material.uniforms.uMorph, {value: 0}, {value: 1, duration: 2});
-            
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             const btn = document.getElementById('btn-'+name);
             if(btn) btn.classList.add('active');
         }
 
-        // --- 2. ADVANCED GESTURE LOGIC ---
-        function detectGesture(landmarks) {
-            const thumbTip = landmarks[4];
-            const indexTip = landmarks[8];
-            const middleTip = landmarks[12];
-            const ringTip = landmarks[16];
-            const pinkyTip = landmarks[20];
-            const wrist = landmarks[0];
-
-            // Helper: Is finger extended? (Tip higher than PIP joint)
-            const isExtended = (tipIndex, pipIndex) => landmarks[tipIndex].y < landmarks[pipIndex].y; // y inverted in video
+        // --- 2. ADVANCED GESTURE ENGINE ---
+        function detectGesture(lm) {
+            // Helper: Is Finger Extended? (Tip Y < PIP Y) - Note: Y is inverted in MediaPipe video coords
+            const isExtended = (tip, pip) => lm[tip].y < lm[pip].y;
             
-            // 1. FIST (All fingers curled down)
-            // Simplified: Tips are close to wrist or palm center
-            // Let's check if tips are below their knuckles significantly
-            // Or just check distance between Index Tip and Wrist.
-            const dIndexWrist = Math.hypot(indexTip.x - wrist.x, indexTip.y - wrist.y);
-            const dPinkyWrist = Math.hypot(pinkyTip.x - wrist.x, pinkyTip.y - wrist.y);
+            // Finger States
+            const thumbUp = isExtended(4, 2); // Less reliable for thumb, but okay for open palm
+            const indexUp = isExtended(8, 6);
+            const middleUp = isExtended(12, 10);
+            const ringUp = isExtended(16, 14);
+            const pinkyUp = isExtended(20, 18);
+
+            const fingersUpCount = [indexUp, middleUp, ringUp, pinkyUp].filter(Boolean).length;
             
-            if (dIndexWrist < 0.3 && dPinkyWrist < 0.3) {
-                return "FIST";
-            }
+            // 1. PINCH (Thumb touches Index)
+            const dPinch = Math.hypot(lm[8].x - lm[4].x, lm[8].y - lm[4].y);
+            if (dPinch < 0.05) return "PINCH";
 
-            // 2. OPEN PALM (All fingers extended)
-            // Check if Index, Middle, Ring, Pinky are extended
-            // (Note: This depends on hand orientation, assuming upright hand)
-            if (landmarks[8].y < landmarks[6].y && landmarks[12].y < landmarks[10].y && landmarks[16].y < landmarks[14].y && landmarks[20].y < landmarks[18].y) {
-                
-                // Distinguish from Peace sign (check ring/pinky)
-                // If ring and pinky are UP, it's Palm.
-                return "PALM";
-            }
+            // 2. FIST (0 or 1 finger up)
+            if (fingersUpCount === 0) return "FIST";
 
-            // 3. PEACE / VICTORY (Index & Middle UP, others DOWN)
-            if (landmarks[8].y < landmarks[6].y && landmarks[12].y < landmarks[10].y && landmarks[16].y > landmarks[14].y) {
-                return "PEACE";
-            }
+            // 3. PALM (All 4 fingers up + Thumb usually out)
+            if (fingersUpCount === 4) return "PALM";
 
-            // Default: Pointing
+            // 4. PEACE (Index + Middle Up only)
+            if (indexUp && middleUp && !ringUp && !pinkyUp) return "PEACE";
+
+            // Default
             return "POINT";
         }
 
@@ -419,39 +415,52 @@
                     const lm = results.landmarks[0];
                     const gesture = detectGesture(lm);
                     
-                    // Update HUD
-                    gestureLabel.innerText = "DETECTED: " + gesture;
-                    gestureLabel.style.color = (gesture === "FIST" ? "#ff0055" : (gesture === "PALM" ? "#ffaa00" : "cyan"));
-
                     // Coordinates (Index Tip)
                     targetX = (1 - lm[8].x) * 40 - 20; 
                     targetY = -(lm[8].y) * 30 + 15;
                     cursorMesh.visible = true;
 
-                    // --- APPLY LOGIC ---
+                    // --- STATE MACHINE ---
+                    let interactType = 0.0;
+                    let cursorColor = 0x00ffff;
+                    let label = "POINTING";
+                    let targetSpeed = 1.0;
+
                     if (gesture === "FIST") {
-                        // REBUILD
-                        material.uniforms.uInteractType.value = 1.0; 
-                        cursorMesh.material.color.setHex(0xff0055); // Red Cursor
+                        interactType = 1.0; // Implode
+                        cursorColor = 0xff0055; // Red
+                        label = "FIST: IMPLODE";
                     } else if (gesture === "PALM") {
-                        // DESTROY
-                        material.uniforms.uInteractType.value = 2.0; 
-                        cursorMesh.material.color.setHex(0xffaa00); // Orange Cursor
+                        interactType = 2.0; // Explode
+                        cursorColor = 0xffaa00; // Orange
+                        label = "PALM: EXPLODE";
+                    } else if (gesture === "PINCH") {
+                        interactType = 4.0; // Freeze
+                        targetSpeed = 0.05; // Slow down time
+                        cursorColor = 0xffffff; // White
+                        label = "PINCH: FREEZE";
                     } else if (gesture === "PEACE") {
-                        // NEXT SHAPE (Debounced)
+                        interactType = 0.0;
                         const now = Date.now();
-                        if (now - lastGestureTime > 2000) { // Wait 2 sec between switches
+                        if (now - lastGestureTime > 2000) {
                             currentShapeIndex = (currentShapeIndex + 1) % shapeKeys.length;
                             switchShape(shapeKeys[currentShapeIndex]);
                             lastGestureTime = now;
-                            gestureLabel.innerText = "SWITCHING SHAPE...";
                         }
-                        material.uniforms.uInteractType.value = 0.0; // No physics interaction while switching
+                        label = "PEACE: NEXT SHAPE";
                     } else {
-                        // POINT (Standard)
-                        material.uniforms.uInteractType.value = 3.0;
-                        cursorMesh.material.color.setHex(0x00ffff); // Cyan Cursor
+                        interactType = 3.0; // Standard Point
                     }
+
+                    // Apply
+                    material.uniforms.uInteractType.value = interactType;
+                    cursorMesh.material.color.setHex(cursorColor);
+                    gestureLabel.innerText = label;
+                    gestureLabel.style.color = (gesture === "PINCH" ? "white" : (gesture === "FIST" ? "#ff0055" : (gesture === "PALM" ? "#ffaa00" : "cyan")));
+                    
+                    // Smooth time speed transition
+                    timeSpeed += (targetSpeed - timeSpeed) * 0.1;
+                    material.uniforms.uSpeed.value = timeSpeed;
 
                 } else {
                     gestureLabel.innerText = "NO HAND";
@@ -477,8 +486,9 @@
 
             cursorMesh.position.set(currentX, currentY, 10);
             
-            // Rotate entire cloud slowly
-            particles.rotation.y = time * 0.05;
+            // Rotation depends on speed (freeze stops rotation too)
+            particles.rotation.y += 0.005 * material.uniforms.uSpeed.value;
+            
             composer.render();
         }
 
