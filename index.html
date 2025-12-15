@@ -2,124 +2,187 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>HoloFlux | Glass Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HoloFlux | Sonic Surge</title>
+    
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='%2300ffff'/><stop offset='50%' stop-color='%230088ff'/><stop offset='100%' stop-color='%23ff00cc'/></linearGradient></defs><rect width='128' height='128' rx='32' fill='%23050505'/><rect width='120' height='120' x='4' y='4' rx='28' fill='none' stroke='url(%23g)' stroke-width='4' opacity='0.5'/><text x='64' y='92' font-size='80' font-family='Segoe UI, sans-serif' font-weight='900' text-anchor='middle' fill='url(%23g)'>H</text></svg>">
+
     <style>
-        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Segoe UI', sans-serif; user-select: none; }
-        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-        
-        /* --- HUD ELEMENTS --- */
-        #video-container {
-            position: absolute; bottom: 20px; right: 20px; 
-            width: 160px; height: 120px; 
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px; overflow: hidden; z-index: 20;
-            background: rgba(0,0,0,0.5); backdrop-filter: blur(10px);
-            opacity: 0; transition: opacity 0.5s; pointer-events: none;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
-        }
-        #video-feed { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); opacity: 0.5; }
-        #gesture-label {
-            position: absolute; top: 8px; left: 8px; color: white; font-size: 10px; 
-            font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
-            text-shadow: 0 0 10px rgba(0,255,255,0.8);
+        :root {
+            --flux-gradient: linear-gradient(90deg, #00ffff, #ffffff, #ff00cc, #00ffff);
+            --glass-surface: rgba(255, 255, 255, 0.02);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-highlight: rgba(255, 255, 255, 0.25);
         }
 
-        /* --- THE GLASS START SCREEN --- */
+        body { 
+            margin: 0; overflow: hidden; background-color: #000; 
+            font-family: 'SF Pro Display', 'Segoe UI', -apple-system, sans-serif; 
+            user-select: none; -webkit-tap-highlight-color: transparent; 
+        }
+        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+
+        /* --- ANIMATIONS --- */
+        @keyframes gradientFlow { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes scanline { 0% { top: -100%; } 100% { top: 200%; } }
+        @keyframes barShine { 0% { background-position: 0% 0%; } 100% { background-position: 200% 0%; } }
+
+        /* --- INTRO SCREEN --- */
         #intro-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 100; display: flex; align-items: center; justify-content: center;
-            /* The frosted glass effect over the whole screen */
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(15px) saturate(120%);
-            -webkit-backdrop-filter: blur(15px) saturate(120%);
-            transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+            z-index: 100; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center;
+            background: radial-gradient(circle, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.9) 100%);
+            backdrop-filter: blur(10px);
+            transition: opacity 0.8s ease;
         }
 
-        /* 3D TILT CARD */
+        /* --- THE IOS 26 GLASS CARD --- */
         #glass-card {
-            position: relative;
-            width: 400px; padding: 50px 30px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 30px;
-            text-align: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05);
-            backdrop-filter: blur(20px);
-            overflow: hidden;
-            transform-style: preserve-3d;
-            animation: float 6s ease-in-out infinite;
+            position: relative; width: 420px; padding: 70px 40px;
+            border-radius: 44px; text-align: center; max-width: 85%;
+            transform-style: preserve-3d; animation: float 8s ease-in-out infinite;
+            background: var(--glass-surface);
+            backdrop-filter: blur(60px) saturate(180%);
+            -webkit-backdrop-filter: blur(60px) saturate(180%);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-top: 1px solid rgba(255,255,255,0.3);
+            border-left: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 40px 100px rgba(0,0,0,0.6), inset 0 0 30px rgba(255,255,255,0.02);
         }
 
-        /* Moving Shine Effect */
-        #glass-card::before {
-            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
-            background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
-            transform: skewX(-25deg);
-            animation: shine 4s infinite;
+        /* INFINITE TEXT GRADIENT */
+        .flux-text {
+            background: var(--flux-gradient); background-size: 200% auto;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            animation: gradientFlow 3s linear infinite;
         }
-
-        @keyframes shine { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
         h1 { 
-            font-size: 3.5rem; margin: 0; letter-spacing: -2px; text-transform: uppercase; font-weight: 800;
-            background: linear-gradient(135deg, #fff 0%, #00ffff 50%, #ff00cc 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 15px rgba(0,255,255,0.3));
+            font-size: 4rem; margin: 0; letter-spacing: -2px; font-weight: 800; 
+            margin-bottom: 5px; line-height: 1; filter: drop-shadow(0 0 20px rgba(0,255,255,0.3));
         }
-        
+
         p { 
-            color: rgba(255,255,255,0.7); font-size: 0.9rem; letter-spacing: 4px; 
-            margin-top: 5px; margin-bottom: 40px; text-transform: uppercase; 
+            color: rgba(255,255,255,0.6); font-size: 0.8rem; letter-spacing: 4px; 
+            margin-bottom: 50px; text-transform: uppercase; font-weight: 600; 
+        }
+
+        /* --- LIQUID PROGRESS BAR --- */
+        #loading-container {
+            width: 100%; height: 6px; background: rgba(255,255,255,0.05);
+            margin-top: 40px; border-radius: 10px; display: none; position: relative; overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+        }
+        #progress-bar {
+            width: 0%; height: 100%;
+            /* Liquid Texture */
+            background: linear-gradient(90deg, #00ffff, #ffffff, #ff00cc, #00ffff);
+            background-size: 200% 100%;
+            animation: barShine 1.5s linear infinite;
+            transition: width 0.2s cubic-bezier(0.1, 0.7, 1.0, 0.1);
+            box-shadow: 0 0 20px #00ffff, 0 0 40px #ff00cc;
+            border-radius: 10px;
         }
 
         #start-btn {
-            background: linear-gradient(90deg, rgba(0,255,255,0.1), rgba(255,0,204,0.1));
-            border: 1px solid rgba(255,255,255,0.2); color: white;
-            padding: 16px 40px; border-radius: 50px; cursor: pointer;
-            font-size: 14px; letter-spacing: 2px; text-transform: uppercase; font-weight: 600;
+            background: rgba(255,255,255,0.05); color: white;
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 18px 50px; border-radius: 100px; cursor: pointer;
+            font-size: 13px; letter-spacing: 2px; text-transform: uppercase; font-weight: 700;
             transition: 0.3s; position: relative; overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }
         #start-btn:hover {
-            background: white; color: black; box-shadow: 0 0 30px rgba(255,255,255,0.5);
-            transform: scale(1.05);
+            background: rgba(255,255,255,0.15); box-shadow: 0 0 60px rgba(0, 255, 255, 0.3);
+            transform: scale(1.02); border-color: rgba(255,255,255,0.4);
         }
 
-        /* --- BOTTOM UI BAR --- */
-        #ui-layer {
-            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-            z-index: 10; display: flex; gap: 8px; padding: 8px;
-            background: rgba(10, 10, 10, 0.6);
-            backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        /* --- SIGNATURE --- */
+        #credits {
+            position: absolute; bottom: 40px; text-decoration: none;
+            display: flex; align-items: center; gap: 8px; padding: 12px 28px;
+            border-radius: 40px; transition: all 0.3s ease;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
         }
-        
-        button.nav-btn {
-            background: transparent; border: none; color: rgba(255,255,255,0.6);
-            padding: 10px 20px; border-radius: 16px; cursor: pointer;
-            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
-            transition: all 0.3s ease;
-        }
-        button.nav-btn:hover { color: white; background: rgba(255,255,255,0.05); }
-        button.nav-btn.active { background: white; color: black; box-shadow: 0 2px 10px rgba(255,255,255,0.2); }
+        #credits:hover { transform: translateY(-5px); background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
+        .credit-text { color: rgba(255, 255, 255, 0.5); font-size: 11px; letter-spacing: 1px; font-weight: 500; }
+        .credit-highlight { font-weight: 800; font-size: 12px; }
 
-        /* --- INSTRUCTIONS --- */
+        /* --- HUD ELEMENTS --- */
+        .glass-ui {
+            background: rgba(15, 15, 15, 0.6);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
         #cheat-sheet {
-            position: absolute; top: 30px; right: 30px; text-align: right;
-            color: rgba(255,255,255,0.6); font-size: 12px; line-height: 2.2;
-            pointer-events: none; z-index: 5;
-            background: rgba(0,0,0,0.4); padding: 20px; border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px);
+            position: absolute; top: 30px; right: 30px; text-align: left; z-index: 5;
+            padding: 25px 30px; border-radius: 30px;
+            transform: scale(0.9); transform-origin: top right;
         }
-        b { color: white; font-weight: 700; margin-left: 8px; }
+        .instruction-row { display: flex; align-items: center; gap: 15px; margin-bottom: 12px; }
         
-        @media (max-width: 600px) {
-            #glass-card { width: 85%; padding: 40px 20px; }
-            h1 { font-size: 2.5rem; }
-            #cheat-sheet { display: none; }
-            #ui-layer { bottom: 20px; width: 90%; justify-content: center; }
-            button.nav-btn { padding: 10px 12px; font-size: 9px; }
+        .emoji-orb {
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.05); border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: inset 0 0 10px rgba(255,255,255,0.05);
+        }
+        .emoji-orb span { filter: grayscale(100%) brightness(300%) drop-shadow(0 0 5px #00ffff); opacity: 0.9; font-size: 16px; }
+
+        .text-col { display: flex; flex-direction: column; gap: 2px; }
+        .hud-text { font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .hud-gradient { background: var(--flux-gradient); background-size: 200%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: gradientFlow 4s linear infinite; }
+        .desc { color: rgba(255,255,255,0.5); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* CAMERA HUD */
+        #video-container {
+            position: absolute; bottom: 30px; right: 30px; width: 140px; height: 105px; 
+            border-radius: 24px; overflow: hidden; z-index: 20;
+            opacity: 0; transition: opacity 0.5s; pointer-events: none;
+        }
+        #video-container::after {
+            /* Scanline animation overlay */
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 50%;
+            background: linear-gradient(to bottom, transparent, rgba(0, 255, 255, 0.1), transparent);
+            animation: scanline 2s linear infinite; pointer-events: none;
+        }
+        #video-feed { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); opacity: 0.6; mix-blend-mode: screen; }
+        #gesture-label { position: absolute; top: 10px; left: 12px; color: white; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 10px cyan; }
+
+        /* BOTTOM UI */
+        #ui-layer {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            z-index: 10; display: flex; gap: 8px; padding: 10px 14px;
+            border-radius: 50px; white-space: nowrap;
+        }
+        button.nav-btn {
+            background: transparent; border: 1px solid transparent; color: rgba(255,255,255,0.6);
+            padding: 10px 24px; border-radius: 40px; cursor: pointer;
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+            transition: all 0.2s ease; font-family: 'Segoe UI', sans-serif;
+        }
+        button.nav-btn:hover { background: rgba(255,255,255,0.1); color: white; transform: translateY(-2px); }
+        button.nav-btn.active { background: white; color: black; box-shadow: 0 0 25px rgba(255,255,255,0.3); }
+        
+        #mute-btn { width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.1); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-left: 5px; transition: 0.3s; }
+        #mute-btn:hover { background: white; color: black; }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.8rem; }
+            #glass-card { width: 90%; padding: 50px 20px; }
+            #cheat-sheet { top: 15px; left: 15px; right: auto; transform-origin: top left; transform: scale(0.85); padding: 15px 20px; }
+            #ui-layer { bottom: 25px; width: 90%; justify-content: center; padding: 6px; overflow-x: auto; }
+            button.nav-btn { padding: 8px 16px; font-size: 10px; }
+            #video-container { bottom: 90px; right: 15px; width: 100px; height: 75px; }
+            #credits { bottom: 30px; }
         }
     </style>
 </head>
@@ -127,32 +190,73 @@
 
     <div id="intro-screen">
         <div id="glass-card">
-            <h1>HoloFlux</h1>
+            <h1 class="flux-text">HOLOFLUX</h1>
             <p>Interactive Particle Core</p>
+            
             <button id="start-btn">Initialize System</button>
+            
+            <div id="loading-container">
+                <div id="progress-bar"></div>
+            </div>
+        </div>
+        
+        <a href="https://ossamamehmood.com" target="_blank" id="credits" class="glass-ui">
+            <span class="credit-text">Designed by</span>
+            <span class="credit-highlight flux-text">ossamamehmood.com</span>
+        </a>
+    </div>
+
+    <div id="cheat-sheet" class="glass-ui">
+        <div class="instruction-row">
+            <div class="emoji-orb"><span>🖐️</span></div>
+            <div class="text-col">
+                <b class="hud-text hud-gradient">PALM</b>
+                <span class="desc">Shockwave</span>
+            </div>
+        </div>
+        <div class="instruction-row">
+            <div class="emoji-orb"><span>✊</span></div>
+            <div class="text-col">
+                <b class="hud-text hud-gradient">FIST</b>
+                <span class="desc">Gravity Well</span>
+            </div>
+        </div>
+        <div class="instruction-row">
+            <div class="emoji-orb"><span>👌</span></div>
+            <div class="text-col">
+                <b class="hud-text hud-gradient">PINCH</b>
+                <span class="desc">Time Freeze</span>
+            </div>
+        </div>
+        <div class="instruction-row">
+            <div class="emoji-orb"><span>☝️</span></div>
+            <div class="text-col">
+                <b class="hud-text hud-gradient">POINT</b>
+                <span class="desc">Interact</span>
+            </div>
+        </div>
+        <div class="instruction-row">
+            <div class="emoji-orb"><span>✌️</span></div>
+            <div class="text-col">
+                <b class="hud-text hud-gradient">PEACE</b>
+                <span class="desc">Morph Shape</span>
+            </div>
         </div>
     </div>
 
-    <div id="cheat-sheet">
-        🖐️ <b>PALM:</b> Explode<br>
-        ✊ <b>FIST:</b> Implode<br>
-        👌 <b>PINCH:</b> Time Freeze<br>
-        ☝️ <b>POINT:</b> Interact<br>
-        ✌️ <b>PEACE:</b> Next Shape
-    </div>
-
-    <div id="video-container">
+    <div id="video-container" class="glass-ui">
         <video id="video-feed" playsinline muted autoplay></video>
         <div id="gesture-label">Standby</div>
     </div>
 
     <div id="canvas-container"></div>
     
-    <div id="ui-layer">
-        <button class="nav-btn active" id="btn-sphere">Sphere</button>
-        <button class="nav-btn" id="btn-heart">Heart</button>
-        <button class="nav-btn" id="btn-saturn">Saturn</button>
-        <button class="nav-btn" id="btn-spiral">Galaxy</button>
+    <div id="ui-layer" class="glass-ui">
+        <button class="nav-btn active" id="btn-sphere" onmouseenter="playSound('hover')">Sphere</button>
+        <button class="nav-btn" id="btn-heart" onmouseenter="playSound('hover')">Heart</button>
+        <button class="nav-btn" id="btn-saturn" onmouseenter="playSound('hover')">Saturn</button>
+        <button class="nav-btn" id="btn-spiral" onmouseenter="playSound('hover')">Galaxy</button>
+        <button id="mute-btn" onclick="toggleMute()" onmouseenter="playSound('hover')">🔊</button>
     </div>
 
     <script type="importmap">
@@ -173,40 +277,97 @@
         import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
         import { gsap } from 'https://cdn.skypack.dev/gsap';
 
-        // --- AUDIO ENGINE ---
+        // --- 1. ADVANCED AUDIO ENGINE ---
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         let audioCtx;
-        function playSound(type) {
-            if (!audioCtx) return;
+        let isMuted = false;
+
+        // Make sound function global for HTML attributes
+        window.playSound = function(type) {
+            if (!audioCtx || isMuted) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
+            const filter = audioCtx.createBiquadFilter();
+            
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+            
             const now = audioCtx.currentTime;
-            if (type === 'explode') {
-                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.exponentialRampToValueAtTime(10, now+0.5);
-                gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.5);
-            } else if (type === 'implode') {
-                osc.type = 'sine'; osc.frequency.setValueAtTime(50, now); osc.frequency.exponentialRampToValueAtTime(300, now+0.3);
-                gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.4, now+0.2); gain.gain.linearRampToValueAtTime(0, now+0.4);
-            } else if (type === 'freeze') {
-                osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(100, now+1.0);
-                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+1.0);
-            } else if (type === 'morph') {
-                osc.type = 'triangle'; osc.frequency.setValueAtTime(440, now); osc.frequency.setValueAtTime(880, now+0.1);
-                gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.5);
+            
+            if (type === 'hover') {
+                // High-tech blip
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.05);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                osc.start(now); osc.stop(now + 0.05);
+            } 
+            else if (type === 'click') {
+                // Confirm sound
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
             }
-            osc.start(now); osc.stop(now + 1.0);
-        }
+            else if (type === 'explode') {
+                osc.type = 'sawtooth';
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(200, now);
+                filter.frequency.linearRampToValueAtTime(5000, now + 0.5);
+                osc.frequency.setValueAtTime(50, now);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            }
+            else if (type === 'implode') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(100, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.3);
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.3, now + 0.1);
+                gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            }
+            else if (type === 'freeze') {
+                osc.type = 'square';
+                filter.type = 'highpass';
+                filter.frequency.setValueAtTime(1000, now);
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.linearRampToValueAtTime(220, now + 1.0);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0, now + 1.0);
+                osc.start(now); osc.stop(now + 1.0);
+            }
+            else if (type === 'morph') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(554, now + 0.1); // C#
+                osc.frequency.setValueAtTime(659, now + 0.2); // E
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.6);
+                osc.start(now); osc.stop(now + 0.6);
+            }
+        };
 
-        // --- SETUP ---
+        window.toggleMute = () => {
+            isMuted = !isMuted;
+            document.getElementById('mute-btn').innerText = isMuted ? "🔇" : "🔊";
+            if(!isMuted) playSound('click');
+        };
+
+        // --- 2. SETUP ---
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        const PARTICLE_COUNT = isMobile ? 20000 : 60000;
+        const PARTICLE_COUNT = isMobile ? 18000 : 55000;
         let handLandmarker;
         const video = document.getElementById("video-feed");
         const gestureLabel = document.getElementById("gesture-label");
         let lastGestureTime = 0; let timeSpeed = 1.0; let lastGesture = "";
 
-        // --- THREE.JS ---
+        // --- 3. THREE.JS ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 30;
@@ -228,7 +389,7 @@
         const composer = new EffectComposer(renderer);
         composer.addPass(renderScene); composer.addPass(bloomPass);
 
-        // --- SHADER (The Magic) ---
+        // --- 4. SHADER ---
         const vertexShader = `
             uniform float uTime; uniform float uMorph; uniform vec3 uMouse; uniform float uInteractType; uniform float uSpeed; 
             attribute vec3 positionTarget; attribute float sizeRandom; varying vec3 vColor;
@@ -259,6 +420,7 @@
 
             void main() {
                 vec3 pos = mix(position, positionTarget, uMorph);
+                // Dynamic speed for freeze effect
                 float noiseVal = snoise(pos * 0.1 + uTime * 0.2 * uSpeed);
                 pos += normal * noiseVal * 0.3;
                 float dist = distance(pos, uMouse);
@@ -346,26 +508,47 @@
         }
 
         async function enableCam() {
+            // Fix: Initialize Audio Context on user click to bypass browser policy
             audioCtx = new AudioCtx();
-            const btn = document.getElementById('start-btn');
-            btn.innerHTML = 'Initialize Core <span style="font-size:10px">/// LOADING...</span>';
+            if(audioCtx.state === 'suspended') audioCtx.resume();
             
+            const btn = document.getElementById('start-btn');
+            const progressContainer = document.getElementById('loading-container');
+            const progressBar = document.getElementById('progress-bar');
+            
+            btn.style.display = 'none';
+            progressContainer.style.display = 'block';
+            playSound('click'); // Feedback sound
+            
+            // Step 1: Init UI
+            progressBar.style.width = '30%';
+
             try {
+                // Step 2: Load Model
                 const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
+                progressBar.style.width = '60%';
+                
                 handLandmarker = await HandLandmarker.createFromOptions(vision, {
                     baseOptions: { modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`, delegate: "GPU" },
                     runningMode: "VIDEO", numHands: 1, minHandDetectionConfidence: 0.3, minTrackingConfidence: 0.3
                 });
+                progressBar.style.width = '85%';
+
+                // Step 3: Cam Access
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 video.srcObject = stream;
                 video.addEventListener("loadeddata", () => {
-                    // Fade out intro, show UI
-                    gsap.to("#intro-screen", { opacity: 0, pointerEvents: 'none', duration: 0.8 });
-                    document.getElementById("video-container").style.opacity = 1;
-                    predictWebcam();
+                    progressBar.style.width = '100%';
+                    playSound('morph'); // Success sound
+                    setTimeout(() => {
+                        gsap.to("#intro-screen", { opacity: 0, pointerEvents: 'none', duration: 0.8 });
+                        document.getElementById("video-container").style.opacity = 1;
+                        predictWebcam();
+                    }, 500);
                 });
             } catch (err) {
-                alert("Camera Error: " + err);
+                console.error(err);
+                alert("Camera Error or Permission Denied");
                 gsap.to("#intro-screen", { opacity: 0, pointerEvents: 'none' });
             }
         }
@@ -389,8 +572,12 @@
 
             let interactType = 0.0; let cursorColor = 0x00ffff; let label = "POINTING"; let targetSpeed = 1.0;
 
+            // Only play sound if gesture CHANGED
             if (gesture !== lastGesture) {
-                if (gesture === "PALM") playSound('explode'); if (gesture === "FIST") playSound('implode'); if (gesture === "PINCH") playSound('freeze');
+                if (gesture === "PALM") playSound('explode');
+                if (gesture === "FIST") playSound('implode');
+                if (gesture === "PINCH") playSound('freeze');
+                if (gesture === "PEACE") playSound('morph');
                 lastGesture = gesture;
             }
 
@@ -414,8 +601,12 @@
             requestAnimationFrame(predictWebcam);
         }
 
-        window.addEventListener('mousemove', (e) => { if(!handLandmarker || !cursorMesh.visible) { targetX = (e.clientX / window.innerWidth) * 40 - 20; targetY = -(e.clientY / window.innerHeight) * 30 + 15; } });
-        window.addEventListener('mousedown', () => isMouseDown = true); window.addEventListener('mouseup', () => isMouseDown = false);
+        function updatePointer(x, y) { targetX = (x / window.innerWidth) * 40 - 20; targetY = -(y / window.innerHeight) * 30 + 15; }
+        window.addEventListener('mousemove', (e) => { if(!handLandmarker || !cursorMesh.visible) updatePointer(e.clientX, e.clientY); });
+        window.addEventListener('mousedown', () => isMouseDown = true); 
+        window.addEventListener('mouseup', () => isMouseDown = false);
+        window.addEventListener('touchmove', (e) => { if (e.touches.length > 0) { updatePointer(e.touches[0].clientX, e.touches[0].clientY); isMouseDown = true; } }, {passive: false});
+        window.addEventListener('touchend', () => isMouseDown = false);
 
         const clock = new THREE.Clock();
         function animate() {
@@ -435,8 +626,7 @@
         document.getElementById('btn-saturn').onclick = () => switchShape('saturn');
         document.getElementById('btn-spiral').onclick = () => switchShape('spiral');
 
-        animate(); // Start rendering background immediately
-        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight); });
+        animate(); window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight); });
     </script>
 </body>
 </html>
