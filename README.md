@@ -10,7 +10,7 @@
 
   <br />
   
-  <img src="./preview.jpg" alt="HoloFlux Preview" width="100%" style="border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
+  <img src=".github/holoflux.gif" alt="HoloFlux Preview" width="100%" style="border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
 
   <h3>
     <a href="https://holoflux-gesture-engine.vercel.app/">🔴 LAUNCH LIVE EXPERIENCE</a>
