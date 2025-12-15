@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Kinetic - Final Fixed</title>
+    <title>Neon Kinetic - Final Version</title>
     <style>
         /* --- RESET & BASE --- */
         body { margin: 0; overflow: hidden; background-color: #020202; font-family: 'Segoe UI', sans-serif; }
@@ -46,7 +46,6 @@
             padding: 15px; border-radius: 10px; display: flex; align-items: center; gap: 15px;
             width: fit-content;
         }
-        /* Hidden video element, vital for logic but not for display */
         #video-feed { width: 100px; height: 75px; background: #222; transform: scaleX(-1); border-radius: 4px; opacity: 0.5; }
         
         .status-info { color: #888; font-size: 13px; line-height: 1.4; }
@@ -57,17 +56,17 @@
         .active-dot { background: #00ff00; box-shadow: 0 0 10px #00ff00; }
 
         /* --- RED DEBUG CURSOR --- */
-        /* This shows you exactly where the computer thinks your hand is */
         #hand-cursor {
             position: absolute; width: 20px; height: 20px;
             border: 2px solid #ff0000; border-radius: 50%;
             transform: translate(-50%, -50%); pointer-events: none;
             box-shadow: 0 0 20px #ff0000; z-index: 100;
-            display: none; /* Hidden until hand found */
-            transition: width 0.2s, height 0.2s;
+            display: none; transition: width 0.2s, height 0.2s;
         }
         #hand-cursor.pinching { background: rgba(255,0,0,0.5); width: 10px; height: 10px; }
     </style>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -112,8 +111,7 @@
         {
             "imports": {
                 "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-                "@mediapipe/hands": "https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
             }
         }
     </script>
@@ -131,8 +129,8 @@
             particleSize: 0.15,
             bloomStrength: 1.6,
             morphSpeed: 0.05,
-            interactionRadius: 25, // Increased for easier grabbing
-            pinchThreshold: 0.06   // Sensitivity for pinch
+            interactionRadius: 25, 
+            pinchThreshold: 0.06 
         };
 
         // --- GLOBALS ---
@@ -140,15 +138,15 @@
         let positions, targetPositions, colors;
         let clock = new THREE.Clock();
         
-        // Tracking State
-        let handPos = new THREE.Vector3(0,0,0); // Screen space -1 to 1
+        let handPos = new THREE.Vector3(0,0,0);
         let isHandDetected = false;
         let isPinching = false;
         let mouse = new THREE.Vector2(0,0);
 
         // --- INIT ---
         initThree();
-        initCameraAndAI(); // The Fixed Camera Logic
+        // Wait small delay to ensure script loaded
+        setTimeout(initCameraAndAI, 1000); 
         animate();
 
         // --- 1. THREE.JS VISUALS ---
@@ -166,7 +164,7 @@
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
-            // Post Processing (Glow)
+            // Post Processing
             const renderPass = new RenderPass(scene, camera);
             const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
             bloomPass.threshold = 0.1;
@@ -182,10 +180,8 @@
             controls.autoRotate = true;
             controls.autoRotateSpeed = 0.5;
 
-            // Create Particles
             createParticles();
             
-            // Listeners
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
@@ -193,7 +189,6 @@
                 composer.setSize(window.innerWidth, window.innerHeight);
             });
             
-            // Mouse fallback
             document.addEventListener('mousemove', (e) => {
                 if(!isHandDetected) {
                     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -201,7 +196,6 @@
                 }
             });
             
-            // Expose shape button function
             window.setShape = calculateShape;
         }
 
@@ -220,7 +214,7 @@
                 positions[i*3+1] = (Math.random()-0.5)*50;
                 positions[i*3+2] = (Math.random()-0.5)*50;
                 
-                color.setHSL(0.6 + Math.random()*0.2, 0.8, 0.6); // Blue/Purple
+                color.setHSL(0.6 + Math.random()*0.2, 0.8, 0.6);
                 colors[i*3] = color.r;
                 colors[i*3+1] = color.g;
                 colors[i*3+2] = color.b;
@@ -229,7 +223,6 @@
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
             
-            // Custom Texture
             const cvs = document.createElement('canvas'); cvs.width=32; cvs.height=32;
             const ctx = cvs.getContext('2d');
             const grd = ctx.createRadialGradient(16,16,0,16,16,16);
@@ -256,7 +249,6 @@
 
         // --- 2. SHAPE MATH ---
         function calculateShape(type) {
-            // Button Styling
             document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
             const btn = document.getElementById(`btn-${type}`);
             if(btn) btn.classList.add('active');
@@ -279,20 +271,17 @@
                     z = (Math.random()-0.5) * 5;
                 } else if(type === 'saturn') {
                     if(i < count*0.6) {
-                        // Planet
                         const phi = Math.acos(-1 + (2*i)/(count*0.6));
                         const theta = Math.sqrt(count*0.6 * Math.PI) * phi;
                         x = 7 * Math.cos(theta) * Math.sin(phi);
                         y = 7 * Math.sin(theta) * Math.sin(phi);
                         z = 7 * Math.cos(phi);
                     } else {
-                        // Ring
                         const ang = Math.random() * 6.28;
                         const r = 10 + Math.random() * 6;
                         x = r * Math.cos(ang);
                         z = r * Math.sin(ang);
                         y = (Math.random()-0.5);
-                        // Tilt
                         let ty = y*Math.cos(0.4) - z*Math.sin(0.4);
                         let tz = y*Math.sin(0.4) + z*Math.cos(0.4);
                         y=ty; z=tz;
@@ -304,7 +293,6 @@
                     y = (i*0.05) - 15;
                     if(i%2==0) { x = 6 * Math.cos(t+3.14); z = 6 * Math.sin(t+3.14); }
                 } else {
-                    // Random/Cloud
                     x = (Math.random()-0.5)*40;
                     y = (Math.random()-0.5)*40;
                     z = (Math.random()-0.5)*40;
@@ -321,15 +309,11 @@
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Determine Interaction Point (Hand or Mouse)
-            // Screen coords (-1 to 1) -> World coords (approx -20 to 20)
             let tx, ty;
             if(isHandDetected) {
-                // Hand is active
                 tx = handPos.x * 25; 
                 ty = handPos.y * 25;
             } else {
-                // Mouse fallback
                 tx = mouse.x * 25;
                 ty = mouse.y * 25;
             }
@@ -338,21 +322,16 @@
 
             for(let i=0; i<CONFIG.particleCount; i++) {
                 const idx = i*3;
-                let px = p[idx];
-                let py = p[idx+1];
-                let pz = p[idx+2];
-
+                let px = p[idx], py = p[idx+1], pz = p[idx+2];
                 let targetX = targetPositions[idx];
                 let targetY = targetPositions[idx+1];
                 let targetZ = targetPositions[idx+2];
 
-                // --- INTERACTION PHYSICS ---
                 const dx = px - tx;
                 const dy = py - ty;
-                const dist = Math.sqrt(dx*dx + dy*dy); // 2D distance for simplicity
+                const dist = Math.sqrt(dx*dx + dy*dy); 
 
                 if(isPinching) {
-                    // EXPLODE MODE: Push away strongly
                     if(dist < 15) {
                         const force = (15 - dist) * 2;
                         targetX += (dx/dist) * force * 2;
@@ -361,21 +340,16 @@
                     }
                 } 
                 else if (dist < CONFIG.interactionRadius) {
-                    // ATTRACT MODE: Pull towards hand
-                    // Add a swirling sine wave
                     const angle = Math.atan2(dy, dx);
                     const pull = (CONFIG.interactionRadius - dist) * 0.05;
-                    
                     targetX -= Math.cos(angle) * pull;
                     targetY -= Math.sin(angle) * pull;
-                    targetZ += Math.sin(time * 5 + i) * 0.5; // Swirl Z
+                    targetZ += Math.sin(time * 5 + i) * 0.5;
                 }
 
-                // Noise for life
                 targetX += Math.sin(time * 0.5 + i) * 0.1;
                 targetY += Math.cos(time * 0.3 + i) * 0.1;
 
-                // Move current pos to target pos
                 p[idx] += (targetX - px) * CONFIG.morphSpeed;
                 p[idx+1] += (targetY - py) * CONFIG.morphSpeed;
                 p[idx+2] += (targetZ - pz) * CONFIG.morphSpeed;
@@ -386,7 +360,7 @@
             composer.render();
         }
 
-        // --- 4. ROBUST AI CAMERA SETUP ---
+        // --- 4. ROBUST AI CAMERA (GLOBAL ACCESS) ---
         async function initCameraAndAI() {
             const videoElement = document.getElementById('video-feed');
             const statusMsg = document.getElementById('msg');
@@ -396,14 +370,12 @@
             statusMsg.innerText = "Requesting Camera...";
 
             try {
-                // A. GET CAMERA STREAM
+                // A. GET CAMERA
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: { width: 320, height: 240, facingMode: "user" }
                 });
-
                 videoElement.srcObject = stream;
                 
-                // Wait for video to actually play data
                 await new Promise(resolve => {
                     videoElement.onloadedmetadata = () => {
                         videoElement.play();
@@ -413,42 +385,40 @@
 
                 statusMsg.innerText = "Loading AI Model...";
 
-                // B. LOAD MEDIAPIPE
-                const { Hands } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js');
-                
-                const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+                // B. LOAD HANDS (GLOBAL SCOPE)
+                // We do NOT use import() here. We use window.Hands
+                if (!window.Hands) {
+                    throw new Error("MediaPipe library failed to load from CDN.");
+                }
+
+                const hands = new window.Hands({
+                    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+                });
                 
                 hands.setOptions({
                     maxNumHands: 1,
-                    minDetectionConfidence: 0.4, // Low light friendly
+                    minDetectionConfidence: 0.4,
                     minTrackingConfidence: 0.5
                 });
 
                 hands.onResults((results) => {
                     if(results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                        // Hand Found
                         isHandDetected = true;
                         statusDot.classList.add('active-dot');
                         
                         const lm = results.multiHandLandmarks[0];
-                        
-                        // 1. Get Position (Palm Center roughly index 9)
-                        // Mirror X (1 - x) because webcam acts like a mirror
                         const rawX = 1 - lm[9].x; 
-                        const rawY = 1 - lm[9].y; // Flip Y to match ThreeJS
+                        const rawY = 1 - lm[9].y;
                         
-                        // Map 0..1 to -1..1
                         handPos.x = (rawX * 2) - 1;
                         handPos.y = (rawY * 2) - 1;
 
-                        // 2. Pinch Detection (Thumb Tip 4 vs Index Tip 8)
                         const d = Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y);
                         isPinching = d < CONFIG.pinchThreshold;
 
-                        // 3. Update Visual Cursor (Red Dot)
                         cursor.style.display = 'block';
                         cursor.style.left = (rawX * 100) + '%';
-                        cursor.style.top = (lm[9].y * 100) + '%'; // CSS uses top-down Y
+                        cursor.style.top = (lm[9].y * 100) + '%';
                         
                         if(isPinching) {
                             cursor.classList.add('pinching');
@@ -459,7 +429,6 @@
                         }
 
                     } else {
-                        // Lost Hand
                         isHandDetected = false;
                         statusDot.classList.remove('active-dot');
                         cursor.style.display = 'none';
@@ -469,7 +438,6 @@
 
                 // C. START LOOP
                 async function frameLoop() {
-                    // Only send data if video is ready
                     if(videoElement.readyState >= 2) {
                         await hands.send({image: videoElement});
                     }
@@ -482,7 +450,6 @@
             } catch(err) {
                 console.error(err);
                 statusMsg.innerHTML = `Error: ${err.message}`;
-                alert("Camera failed. Please use HTTPS (Vercel) and Allow Camera.");
             }
         }
     </script>
