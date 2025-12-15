@@ -40,7 +40,7 @@ It renders **55,000 interactive particles** that react to your physical hand mov
 * **🌑 Low-Light Capable:** Uses Lerp (Linear Interpolation) smoothing algorithms to filter out webcam noise in dark environments.
 * **💎 Cinematic Post-Processing:** Integrated UnrealBloomPass for that neon, sci-fi aesthetic.
 
-<p align="left">
+<p align="center">
   <img alt="" style="{max-height: 20px}" src="./.github/holoflux.gif">
 </p>
 
