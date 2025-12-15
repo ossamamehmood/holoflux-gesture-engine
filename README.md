@@ -22,6 +22,10 @@
   </h3>
 </div>
 
+<p align="left">
+  <img alt="" style="{max-height: 20px}" src="./.github/holoflux.gif">
+</p>
+
 ---
 
 ## 🔮 What is Holoflux?
